@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.c2p.dinner.System">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="com.google.android.things.permission.SET_TIME" />
+
+    <application
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.Light"
+        android:supportsRtl="true"
+        tools:ignore="GoogleAppIndexingWarning">
+
+        <activity
+            android:name=".MainActivity"
+            android:theme="@android:style/Theme.Light">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/device_filter" />
+        </activity>
+        <activity android:name=".LoginActivity" />
+        <activity
+            android:name=".menu"
+            android:label="Menu, Please enter a number to choose:" />
+        <activity android:name=".reason" />
+        <activity android:name=".register" />
+        <activity android:name=".multiname" />
+        <activity android:name=".LoginMenu" />
+        <activity android:name=".Router_WebView" />
+        <activity
+            android:name=".multipayment"
+            android:theme="@android:style/Theme.Dialog" />
+        <activity
+            android:name=".printmode"
+            android:theme="@android:style/Theme.Dialog" />
+        <activity
+            android:name=".wifimenual"
+            android:theme="@android:style/Theme.Dialog" />
+        <activity
+            android:name=".printerIP"
+            android:theme="@android:style/Theme.Dialog" />
+        <activity android:name=".SpeedTest" />
+        <activity android:name=".DashBoard" />
+        <activity android:name=".testingTools"
+            android:theme="@android:style/Theme.Dialog" />
+        <activity android:name=".searchReason" />
+        <activity android:name=".Language"
+            android:theme="@android:style/Theme.Dialog" />
+
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
+    </application>
+
+</manifest>

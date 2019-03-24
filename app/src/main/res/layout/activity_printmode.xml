@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#edf2fd"
+    android:orientation="vertical"
+    android:padding="20dp"
+    tools:context=".printmode">
+
+    <TextView
+        android:id="@+id/textView9"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Please choose a print Mode:"
+        android:textColor="#000000"
+        android:textSize="24sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="500dp"
+            android:layout_height="wrap_content"
+            android:text="1. Enable Printer"
+            android:textColor="#000000"
+            android:textSize="36sp"
+            android:textStyle="bold" />
+
+        <Switch
+            android:id="@+id/enable_printer"
+            style="@style/Base.TextAppearance.AppCompat.Display2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:checked="true"
+            android:fontFamily="serif"
+            android:switchMinWidth="56dp"
+            android:switchTextAppearance="@android:style/TextAppearance.Holo.Large.Inverse"
+            android:textAppearance="@android:style/TextAppearance.Small"
+            android:textColor="#000000"
+            android:textOff="OFF"
+            android:textOn="ON"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="500dp"
+            android:layout_height="wrap_content"
+            android:text="2. Share Printer"
+            android:textColor="#000000"
+            android:textSize="36sp"
+            android:textStyle="bold" />
+
+        <Switch
+            android:id="@+id/share_printer"
+            style="@style/Base.TextAppearance.AppCompat.Display2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:checked="true"
+            android:fontFamily="serif"
+            android:switchMinWidth="56dp"
+            android:switchTextAppearance="@android:style/TextAppearance.Holo.Large.Inverse"
+            android:textAppearance="@android:style/TextAppearance.Small"
+            android:textColor="#000000"
+            android:textOff="OFF"
+            android:textOn="ON"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/pmode_ip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="3. Printer IP"
+        android:textColor="#000000"
+        android:textSize="36sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/pmode_ip2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="4. Exit"
+        android:textColor="#000000"
+        android:textSize="36sp"
+        android:textStyle="bold" />
+
+
+</LinearLayout>
