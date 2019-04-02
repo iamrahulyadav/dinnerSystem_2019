@@ -25,7 +25,7 @@
     <string name="prepay">Prepay</string>
     <string name="anonymous">Anonymous</string>
     <string name="card">Card</string>
-    <string name="mm_yy">MM/YY</string>
+    <string name="mm_yy" translatable="false">MM/YY</string>
     <string name="cvv">CVV</string>
     <string name="check_number">Check Number</string>
     <string name="honoree">Honoree</string>
@@ -52,4 +52,17 @@
     <string name="Trying_to_connect_to">Trying to connect to</string>
     <string name="Successful_connected_to">Successful connected to</string>
     <string name="Failed_to_connect_to">Failed to connect to</string>
+    <string name="Processing">Processing...</string>
+    <string name="Account_Error">Account Error</string>
+    <string name="Please_reenter_Phone_Number">Please reenter Phone Number.</string>
+    <string name="Enter_Expiration_Date">Enter Expiration Date: MM/YY</string>
+    <string name="Enter_CVV">Enter CVV</string>
+    <string name="Enter_check_number">Enter check number</string>
+    <string name="menu_please_enter_a_number_to_choose">Menu, Please enter a number to choose:</string>
+    <string name="log_out">Log Out.</string>
+    <string name="clear">Clear</string>
+    <string name="reason">Reason</string>
+    <string name="monthly_payments">Monthly Payments</string>
+    <string name="charidy_anonymous">Charidy Anonymous</string>
+    <string name="Version">Version</string>
 </resources>

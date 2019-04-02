@@ -76,6 +76,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:adjustViewBounds="true"
+            android:clickable="true"
+            android:onClick="onBtnClick"
             android:scaleType="fitXY"
             android:src="@drawable/wifi0"
             app:layout_constraintRight_toRightOf="parent"
@@ -116,6 +118,7 @@
                 android:enabled="false"
                 android:hint="@string/phone"
                 android:padding="2dp"
+                android:textAlignment="center"
                 android:textSize="30sp"
                 android:textStyle="bold" />
 
@@ -191,6 +194,7 @@
                 android:enabled="false"
                 android:hint="@string/amount"
                 android:padding="2dp"
+                android:textAlignment="center"
                 android:textSize="30sp"
                 android:textStyle="bold" />
 
@@ -242,11 +246,10 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/full_bLL"
             android:layout_width="412dp"
-            android:layout_height="100dp"
-            android:orientation="horizontal">
+            android:layout_height="100dp">
 
             <Button
                 android:id="@+id/full_bprepay"
@@ -254,33 +257,46 @@
                 android:layout_height="wrap_content"
                 android:text="@string/prepay"
                 android:textSize="36sp"
-                android:textStyle="bold|italic" />
+                android:textStyle="bold|italic"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <ImageButton
                 android:id="@+id/full_bcash"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="0dp"
                 android:adjustViewBounds="true"
                 android:scaleType="fitXY"
-                android:src="@drawable/cash" />
+                android:src="@drawable/cash"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <ImageButton
                 android:id="@+id/full_bcc"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="0dp"
                 android:adjustViewBounds="true"
                 android:scaleType="fitXY"
-                android:src="@drawable/card" />
+                android:src="@drawable/card"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <ImageButton
                 android:id="@+id/full_bcheck"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="100dp"
                 android:adjustViewBounds="true"
                 android:scaleType="fitXY"
-                android:src="@drawable/check" />
+                android:src="@drawable/check"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-        </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <Space
             android:layout_width="0dp"

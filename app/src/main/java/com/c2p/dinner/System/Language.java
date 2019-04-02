@@ -35,12 +35,12 @@ public class Language extends Activity  {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if(keyCode == BUTTON_1){  //english
             locale = new Locale("en_US");
-            Toast.makeText(this, "English", Toast.LENGTH_SHORT).show();
+            new nonStaticUtilities().saveLanguage("en_US",this);
         }
         
         if(keyCode == BUTTON_2){   //yiddish
             locale = new Locale("iw","IL");
-            Toast.makeText(this, "iw_IL", Toast.LENGTH_SHORT).show();
+            new nonStaticUtilities().saveLanguage("iw_IL",this);
         }
         
     

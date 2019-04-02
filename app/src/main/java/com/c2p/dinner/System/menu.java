@@ -2,10 +2,12 @@ package com.c2p.dinner.System;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -31,17 +33,16 @@ public class menu extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+    
+        Configuration conf = getResources().getConfiguration();
+        System.out.println("conf.locale.getLanguage()" + conf.locale.getLanguage());
+        if (conf.locale.getLanguage().equals("iw"))
+            getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        else
+            getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        
         setContentView(R.layout.activity_menu);
-
-       /* textview.setLayoutParams(layoutparams);
-        textview.setText("     Menu, Please enter a number to choose:");
-        textview.setTypeface(null, Typeface.BOLD);
-        textview.setTextColor(Color.WHITE);
-        textview.setTextSize(25);
-
-        actionbar.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
-        actionbar.setCustomView(textview);
-*/
+        
         opt1 = findViewById(R.id.menu_op1);
         opt3 = findViewById(R.id.menu_op3);
         opt5 = findViewById(R.id.menu_op5);

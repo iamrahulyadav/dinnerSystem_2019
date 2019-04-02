@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -99,14 +101,17 @@ public class LoginActivity extends Activity {
         background = findViewById(R.id.login_root);
         versionTv = findViewById(R.id.version);
         
-        versionTv.setText("Version "+ BuildConfig.VERSION_NAME);
+        versionTv.setText(getString(R.string.Version)+ BuildConfig.VERSION_NAME);
         
         cashierNum.addTextChangedListener(new PhoneNumberFormattingTextWatcher());
     
         cashierNum.requestFocus();
         globalV.PRINTER_IPSTATE ="";
         globalV.deviceMac = getMacAddr();
-
+    
+        httpGetImage();
+    
+        
         gettingInfo.setText("");
         ipText.setText("MAC: "+ globalV.deviceMac +"               Device:"+new nonStaticUtilities().getDeviceName(this)+"                  IP: " + getMyLocalIpAddress());
         globalV.postLogin = false;
@@ -192,6 +197,16 @@ public class LoginActivity extends Activity {
         startStatusBarUpdater();
         
         DsLogs.UploadLogs();
+    }
+    
+    public void onLoginBtnClick(View v) {
+        switch (v.getId()) {
+            case R.id.login_wifi:
+                Intent wifiIntent = new Intent(LoginActivity.this, wifiActivity.class);
+                startActivity(wifiIntent);
+                break;
+        }
+        
     }
     
     private void startStatusBarUpdater() {
@@ -367,10 +382,7 @@ public class LoginActivity extends Activity {
                 gettingInfo.setText(getString(R.string.getting_reasons));
             }
         });
-            
-            new Thread( new Runnable() {
-                @Override
-                public void run() {
+        
                     URL url = null;
                     HttpsURLConnection urlConnection;
                     BufferedReader reader = null;
@@ -413,7 +425,7 @@ public class LoginActivity extends Activity {
                         globalV.reasons.clear();
                         for(int i = 0; i<reasonJSON.length();i++){
                             JSONObject jsonobject = reasonJSON.getJSONObject(i);
-                            globalV.reasonsObjs.add(new ReasonObject(jsonobject.getString("reasonName"),jsonobject.getInt("reasonId"),jsonobject.getInt("number")));
+                            globalV.reasonsObjs.add(new ReasonObject(jsonobject.getString("reasonNameJewish"),jsonobject.getInt("reasonId"),jsonobject.getInt("number")));
                         }
                         for(int i = 0; i<reasonJSON.length();i++){
                             globalV.reasons.add(globalV.reasonsObjs.get(i).name);
@@ -450,9 +462,9 @@ public class LoginActivity extends Activity {
                     });
                     
                     }
-            
-                }
-            }).start();
+    
+    
+        
         
     }
     
@@ -778,6 +790,70 @@ public class LoginActivity extends Activity {
             }
         }
         return WIFI_GOOD_0;
+    }
+    
+    private void httpGetImage() {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection urlConnection = null;
+                Bitmap img = null;
+                try {
+                    URL url = new URL("http://printserver.c2p.group:7647/Events/ReceiptLogo.png");
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestProperty("Connection","Close");
+                    Log.d("httpGetImage", url.toString() + "  ResponseCode: " + String.valueOf(urlConnection.getResponseCode()) + " " + urlConnection.getResponseMessage());
+                    if (urlConnection.getResponseCode() == 200) {
+                        InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                        img = BitmapFactory.decodeStream(in);
+                        in.close();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally{
+                    if(urlConnection != null)
+                        urlConnection.disconnect();
+                }
+                
+                if(img != null){
+                    try{
+                        new nonStaticUtilities().saveImageToDisk(img, LoginActivity.this, "ReceiptLogo");
+                    }catch(Exception e){
+                        e.printStackTrace();
+                    }
+                }
+    
+                img = null;
+    
+                try {
+                    URL url = new URL("http://printserver.c2p.group:7647/Events/"+ new nonStaticUtilities().getEventPin(LoginActivity.this) + "/Logo.png");
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestProperty("Connection","Close");
+                    Log.d("httpGetImage", url.toString() + "  ResponseCode: " + String.valueOf(urlConnection.getResponseCode()) + " " + urlConnection.getResponseMessage());
+                    if (urlConnection.getResponseCode() == 200) {
+                        InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                        img = BitmapFactory.decodeStream(in);
+                        in.close();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally{
+                    if(urlConnection != null)
+                        urlConnection.disconnect();
+                }
+    
+                if(img != null){
+                    try{
+                        new nonStaticUtilities().saveImageToDisk(img, LoginActivity.this, "Logo");
+                    }catch(Exception e){
+                        e.printStackTrace();
+                    }
+                }
+                
+            }
+        });
+        thread.start();
+        
     }
     
     

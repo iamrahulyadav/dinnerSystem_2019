@@ -33,9 +33,11 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:adjustViewBounds="true"
+            android:clickable="true"
+            android:contentDescription="@string/login_wifi"
+            android:onClick="onLoginBtnClick"
             android:scaleType="fitXY"
-            android:src="@drawable/wifi0"
-            android:contentDescription="@string/login_wifi" />
+            android:src="@drawable/wifi0" />
     </LinearLayout>
 
     <TextView

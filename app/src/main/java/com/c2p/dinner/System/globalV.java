@@ -18,6 +18,7 @@ public class globalV {
     static String registeredTo = "No Event";
     static ArrayList<String> reasons = new ArrayList<String>();
     static ArrayList<ReasonObject> reasonsObjs = new ArrayList<>();
+    static int reasonId = -1;
     static boolean kioskMode = false;
     static boolean demomode = false;
     static JSONArray accountsJsonArray;
@@ -54,10 +55,6 @@ public class globalV {
     
     static boolean testAutomation = false;
     static boolean transactionCompleted = true;
-    
-    static void setDemomode(boolean Dmode){
-
-    }
 
     
 

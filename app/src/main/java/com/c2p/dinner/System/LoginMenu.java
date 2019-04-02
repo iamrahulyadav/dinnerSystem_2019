@@ -2,9 +2,11 @@ package com.c2p.dinner.System;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.Window;
 import android.widget.TextView;
 
@@ -27,6 +29,13 @@ public class LoginMenu extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+        Configuration conf = getResources().getConfiguration();
+        System.out.println("conf.locale.getLanguage()" + conf.locale.getLanguage());
+        if (conf.locale.getLanguage().equals("iw"))
+            getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        else
+            getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        
         setContentView(R.layout.activity_login_menu);
         
     }
@@ -51,6 +60,7 @@ public class LoginMenu extends Activity {
         }
         if(keyCode == BUTTON_4){
             finishAffinity();
+            System.exit(0);
         }
         if(keyCode == BUTTON_5){
             Intent wifiI = new Intent(LoginMenu.this,wifimenual.class);

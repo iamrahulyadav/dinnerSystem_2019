@@ -10,6 +10,7 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -33,21 +34,24 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.text.NumberFormat;
@@ -59,12 +63,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 
@@ -76,7 +75,7 @@ public class MainActivity extends Activity {
     C2pPrinter c2pPrinter;
     EditText defaultET, amountText, phoneText, cardText, expText, cvvText, checkText;
     ArrayList<EditText> Etexts = new ArrayList<EditText>();
-    TextView gettingInfo, reasontext,feedback,dinnerIncome,totalPeople;
+    TextView reasontext,feedback,dinnerIncome,totalPeople;
     TextView nametext, notetext;
     TextView timetext, usernametext, eventtext, printerConnectionType;
     ImageButton bcash, bcc, bcheck;
@@ -94,9 +93,13 @@ public class MainActivity extends Activity {
     String nameNote = "";
     long startTime;
     int prevKey = 0;
-    LinearLayout ccll,bll,peopleLL, nameLL, plagedLL;
+    LinearLayout ccll,peopleLL, nameLL, plagedLL;
+    ConstraintLayout bll;
     ImageView processIcon;
-    String[] hints = new String[]{"Enter any of the above information or swipe","Enter Expiration Date: MM/YY","Enter CVV","Enter check number"};
+    String[] hints;
+    
+    String prepaidAmount;
+    
     String[] array;
     String[] barCodeArray;
     final int BUTTON_CASH = 143;  //54  143 on device
@@ -145,8 +148,21 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
     
+    
+        Resources res = getResources();
+        DisplayMetrics dm = res.getDisplayMetrics();
+        Configuration conf = res.getConfiguration();
+        Locale locale;
+        if(new nonStaticUtilities().getLanguage(this).equals("iw_IL")){
+            locale = new Locale("iw", "IL");
+            conf.locale = locale;
+        } else if(new nonStaticUtilities().getLanguage(this).equals("en_US")){
+            locale = new Locale("en_US");
+            conf.locale = locale;
+        }
+    
+        res.updateConfiguration(conf, dm);
         
-        Configuration conf = getResources().getConfiguration();
         System.out.println("conf.locale.getLanguage()" + conf.locale.getLanguage());
         if (conf.locale.getLanguage().equals("iw"))
             getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -170,7 +186,7 @@ public class MainActivity extends Activity {
         printerImg = findViewById(R.id.printer_iv);
         sharedPrinterImg = findViewById(R.id.shared_iv);
         printerConnectionType= findViewById(R.id.printer_connection);
-        gettingInfo = findViewById(R.id.getting_info);
+ //       gettingInfo = findViewById(R.id.getting_info);
         reasontext = findViewById(R.id.full_reason);
         feedback = findViewById(R.id.full_feedback);
         totalPeople = findViewById(R.id.full_totalpeople);
@@ -196,6 +212,8 @@ public class MainActivity extends Activity {
         amountText.addTextChangedListener(new MoneyTextWatcher(amountText));
         expText.addTextChangedListener(new ExpiryDateTextWatcher());
         //phoneET.requestFocus();
+    
+        hints = new String[]{getString(R.string.enter_any_of_the_above_information), getString(R.string.Enter_Expiration_Date), getString(R.string.Enter_CVV), getString(R.string.Enter_check_number)};
         
         globalV.postLogin = false;
         
@@ -306,11 +324,12 @@ public class MainActivity extends Activity {
                         checkText.setBackgroundResource(R.drawable.border_green);
 
 
-                    }else if((text.length() == 10)|(text.length() == 11 && text.startsWith("1"))){//its a phone number
+                    }else if((text.length() > 9 && text.length() < 13)|(text.length() == 11 && text.startsWith("1"))){//its a phone number
                         if(text.length() == 11 && text.startsWith("1")){
                             text = text.substring(1);
                         }
-                        phoneText.setText("");
+                        phoneText.setTextDirection(View.TEXT_DIRECTION_LTR);
+                      //  phoneText.setText("");
                         phoneText.setText(text);
                         phone =text;
                         defaultET.setText("");
@@ -353,28 +372,32 @@ public class MainActivity extends Activity {
                                 }
 
                             }
-
+    
+                            if(mode == MODE_PREPAY){
+                                if(Double.valueOf(text) > Double.valueOf(prepaidAmount)){
+                                    mode = MODE_NON;
+                                    feedback.setText("");
+                                    processIcon.setVisibility(View.INVISIBLE);
+                                    bll.removeAllViews();
+                                    ccll.removeAllViews();
+                                    if (!globalV.kioskMode) {
+                                        bll.addView(bcash);
+                                    }
+                                    bll.addView(bcc);
+                                    if (!globalV.kioskMode) {
+                                        bll.addView(bcheck);
+                                    }
+                                    ccll.addView(cardText);
+                                }
+        
+                            }
+                            
                             amountText.setText(text);
                             amount = text;
                             defaultET.setText("");
                             last = amountText;
                             amountText.setBackgroundResource(R.drawable.border_green);
-                            if(mode == MODE_PREPAY){
-                                mode = MODE_NON;
-                                feedback.setText("");
-                                processIcon.setVisibility(View.INVISIBLE);
-                                bll.removeAllViews();
-                                ccll.removeAllViews();
-                                if (!globalV.kioskMode) {
-                                    bll.addView(bcash);
-                                }
-                                bll.addView(bcc);
-                                if (!globalV.kioskMode) {
-                                    bll.addView(bcheck);
-                                }
-                                ccll.addView(cardText);
-
-                            }
+                            
 
                         }
 
@@ -595,6 +618,7 @@ public class MainActivity extends Activity {
 
     void setPrepay(String ppammount){
         mode = MODE_PREPAY;
+        prepaidAmount = ppammount;
         ccll.removeAllViews();
         bll.removeAllViews();
         if(!ppammount.contains(".")){
@@ -772,17 +796,20 @@ public class MainActivity extends Activity {
             final processDialog pd = new processDialog(this);
             if (accountId == 0) {
                 pd.show();
-                pd.setTitletext("Account Error");
-                pd.settext("Please reenter Phone Number.");
+                pd.setTitletext(getString(R.string.Account_Error));
+                pd.settext(getString(R.string.Please_reenter_Phone_Number));
                 pd.enableB();
             } else {
                 pd.show();
-                pd.settext("Processing...");
+                pd.settext(getString(R.string.Processing));
+                
                 Thread thread = new Thread(new Runnable() {
                     @Override
                     public void run() {
                         globalV.logTime = System.currentTimeMillis();
                         com.epson.epos2.printer.Printer thisPrinter = null;
+                        
+                        final int reasonId = reason;
                 
                         try {
                             startTime = SystemClock.uptimeMillis();
@@ -837,6 +864,7 @@ public class MainActivity extends Activity {
                                     jsonParam.put("monthlyAmount", mpeach);
                                 }
                             } else if (fRef == MODE_CCSWIPE) {
+                                
                                 jsonParam.put("ccNum", cardbuffer);
                                 if (MODE_CCMULTIPAYMENT) {
                                     jsonParam.remove("PaymentType");
@@ -969,7 +997,7 @@ public class MainActivity extends Activity {
                                         }
                                     });
                             
-                                } else if (response.contains("Success")) {
+                                } else if (response.contains("Success") || response.contains("Approved")) {
                                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                                         public void run() {
                                             pd.setTitletext(getString(R.string.Approved));
@@ -1034,7 +1062,7 @@ public class MainActivity extends Activity {
                                             pd.enableB();
                                         }
                                     });
-                                    c2pPrinter.printExpress(array, barCodeArray,printerImg, pd, MainActivity.this);
+                                    c2pPrinter.printExpress(array, barCodeArray,printerImg, pd, MainActivity.this,reasonId);
                                     if (!globalV.doNotSharePrinter) c2pPrinter.disconnectPrinter(printerImg);
                             
                                     Runtime.getRuntime().gc();
@@ -1391,6 +1419,7 @@ public class MainActivity extends Activity {
                     defaultET.setText(cleantext);
                     defaultET.setSelection(defaultET.getText().length());
                     phoneText.setText("");
+                    phoneText.setTextDirection(View.TEXT_DIRECTION_RTL);
                     phoneText.setBackgroundResource(R.drawable.border_red);
 
                 }
@@ -1432,6 +1461,7 @@ public class MainActivity extends Activity {
                         defaultET.setText(cleantext);
                         defaultET.setSelection(defaultET.getText().length());
                         phoneText.setText("");
+                        phoneText.setTextDirection(View.TEXT_DIRECTION_RTL);
                         phoneText.setBackgroundResource(R.drawable.border_red);
                     }
                 }
@@ -1560,6 +1590,16 @@ public class MainActivity extends Activity {
         runThreads = false;
     }
     
+    public void onBtnClick(View v) {
+        switch (v.getId()) {
+            case R.id.full_wifi:
+                Intent wifiIntent = new Intent(MainActivity.this, wifiActivity.class);
+                startActivity(wifiIntent);
+                break;
+        }
+        
+    }
+    
     private void startStatusBarUpdater() {
         new Thread(new Runnable() {
             @Override
@@ -1677,18 +1717,6 @@ public class MainActivity extends Activity {
     void feedback(String str){
         feedback.setText(str);
     }
-
-    void snack(String title,String text){
-        new AlertDialog.Builder(this)
-                .setTitle(title)
-                .setMessage(text)
-                .setPositiveButton("ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-
-                    }
-                }).show();
-    }
     
     void getPreparedReceipts(final String acountId){
         new Thread( new Runnable() {
@@ -1796,7 +1824,7 @@ public class MainActivity extends Activity {
                 if(gotFiles && globalV.enablePrinting){
                     try {
                         c2pPrinter.connectPrinter(globalV.printerMAC, 15, printerImg, null, MainActivity.this);
-                        c2pPrinter.printExpress(array, barCodeArray, printerImg,null, MainActivity.this);
+                        c2pPrinter.printExpress(array, barCodeArray, printerImg,null, MainActivity.this, -1);
     
                         if(!globalV.doNotSharePrinter)c2pPrinter.disconnectPrinter(printerImg);
     
@@ -1827,10 +1855,6 @@ public class MainActivity extends Activity {
         toast.setView(ttv);
         toast.show();
 
-    }
-    
-    void snack2(String title,String text, Context context){
-    
     }
     
     private void updatePD(final processDialog pd,final String str, final boolean enable){
@@ -2081,6 +2105,66 @@ public class MainActivity extends Activity {
         }
         
     }
+    
+
+    
+    public void postCardknox(){
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String response;
+                try {
+                    URL url = new URL("https://x1.cardknox.com/gateway");
+                    HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+                    conn.setReadTimeout(10000);
+                    conn.setConnectTimeout(15000);
+                    conn.setRequestMethod("POST");
+                    conn.setDoInput(true);
+                    conn.setDoOutput(true);
+    
+                    Uri.Builder builder = new Uri.Builder()
+                            .appendQueryParameter("xKey", "DinnersystemDev_Test_0f67defc754e41ab87979a85")
+                            .appendQueryParameter("xVersion", "4.5.8")
+                            .appendQueryParameter("xSoftwareName", "test")
+                            .appendQueryParameter("xSoftwareVersion", "0.1")
+                            .appendQueryParameter("xCommand", "cc:sale")
+                            .appendQueryParameter("xAmount", amount)
+                            .appendQueryParameter("xMagstripe", cardbuffer);
+                    
+                    String query = builder.build().getEncodedQuery();
+    
+                    OutputStream os = conn.getOutputStream();
+                    BufferedWriter writer = new BufferedWriter(
+                            new OutputStreamWriter(os, "UTF-8"));
+                    writer.write(query);
+                    writer.flush();
+                    writer.close();
+                    os.close();
+    
+                    conn.connect();
+    
+                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    String decodedString;
+                    StringBuilder stringBuilder = new StringBuilder();
+                    while ((decodedString = in.readLine()) != null) {
+                        stringBuilder.append(decodedString);
+                    }
+                    in.close();
+                    response = stringBuilder.toString();
+                    System.out.println("response: " + response);
+                
+                    conn.disconnect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        thread.start();
+        
+        
+        
+    }
+    
     
 
 }

@@ -23,9 +23,10 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
 
-public class nonStaticUtilities {
-    public SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.ENGLISH);
-    public void saveEventName(String name, Context cont){
+class nonStaticUtilities {
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.ENGLISH);
+    
+    void saveEventName(String name, Context cont){
         try {
             String var = dateFormat.format(new Date(System.currentTimeMillis()));
             System.out.println(var);
@@ -47,7 +48,7 @@ public class nonStaticUtilities {
         
     }
     
-    public void saveEventPin(String name, Context cont){
+    void saveEventPin(String name, Context cont){
         try {
             
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(cont.openFileOutput("EVENT_PIN", Context.MODE_PRIVATE));
@@ -62,6 +63,53 @@ public class nonStaticUtilities {
             
         }
         
+    }
+    
+    void saveLanguage(String name, Context cont){
+        try {
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(cont.openFileOutput("LANGUAGE", Context.MODE_PRIVATE));
+            outputStreamWriter.write(name);
+            outputStreamWriter.close();
+        }
+        catch (Exception e) {
+            DsLogs.writeLog("catch: " + e.toString());
+        
+            Log.e("Exception", "File write failed: " + e.toString());
+        }
+    }
+    
+    String getLanguage(Context cont){
+        String ret = "";
+        
+        try {
+            InputStream inputStream = cont.openFileInput("LANGUAGE");
+            
+            if ( inputStream != null ) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String receiveString = "";
+                StringBuilder stringBuilder = new StringBuilder();
+                
+                while ( (receiveString = bufferedReader.readLine()) != null ) {
+                    stringBuilder.append(receiveString);
+                }
+                
+                inputStream.close();
+                ret = stringBuilder.toString();
+            }
+            
+        }
+        catch (FileNotFoundException e) {
+            DsLogs.writeLog("catch: " + e.toString());
+            
+            Log.e("login activity", "File not found: " + e.toString());
+        } catch (Exception e) {
+            DsLogs.writeLog("catch: " + e.toString());
+            
+            Log.e("login activity", "Can not read file: " + e.toString());
+        }
+        
+        return ret;
     }
     
     String getEventName(Context cont){
@@ -157,7 +205,7 @@ public class nonStaticUtilities {
         return ret;
     }
     
-    public void saveDeviceName(String name, Context cont){
+    void saveDeviceName(String name, Context cont){
         try {
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(cont.openFileOutput("DEVICE_NAME", Context.MODE_PRIVATE));
             outputStreamWriter.write(name);
@@ -171,7 +219,7 @@ public class nonStaticUtilities {
         
     }
     
-    public void saveImageToDisk(Bitmap bmp,Context context,String str){
+    void saveImageToDisk(Bitmap bmp, Context context, String str){
         String path = Environment.getExternalStorageDirectory() + "/download/";
         OutputStream fOutputStream = null;
      //   File file = new File(path + "tickets/", str + ".jpg");
@@ -199,7 +247,7 @@ public class nonStaticUtilities {
         }
     }
     
-    public String getDeviceName(Context cont){
+    String getDeviceName(Context cont){
         String ret = "";
         
         try {
@@ -233,7 +281,7 @@ public class nonStaticUtilities {
         return ret;
     }
     
-    public String getPrinterIp(Context cont){
+    String getPrinterIp(Context cont){
         String ret = "";
         
         try {
@@ -267,7 +315,7 @@ public class nonStaticUtilities {
         return ret;
     }
     
-    public String getMyLocalIpAddress() {
+    String getMyLocalIpAddress() {
         try {
             Enumeration networkInterfaces = NetworkInterface.getNetworkInterfaces();  // gets All networkInterfaces of your device
             while (networkInterfaces.hasMoreElements()) {

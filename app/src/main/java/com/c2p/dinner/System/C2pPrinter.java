@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -22,13 +23,15 @@ import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+
+import javax.net.ssl.HttpsURLConnection;
 
 class C2pPrinter {
     
@@ -93,7 +96,7 @@ class C2pPrinter {
         }
     }
     
-    boolean printExpress(String[] names, String[] barCodes,ImageView printerImg, final processDialog pd, final Context context) throws Exception {
+    boolean printExpress(String[] names, String[] barCodes,ImageView printerImg, final processDialog pd, final Context context, final int reasonId) throws Exception {
         System.out.println("myPrinter: i got " + names.length + " images");
         DsLogs.writeLog("myPrinter: i got " + names.length + " images");
         Bitmap[] reciptData = getHttpImagesSingleThread(names, context, pd);
@@ -119,6 +122,17 @@ class C2pPrinter {
         
         if (myPrinter.getStatus().getConnection() == 1) {
             updatePD(pd, context.getString(R.string.Sending_to_Printer));
+    
+    
+            try {
+                System.out.println("reasonId is: " + reasonId);
+                if(reasonId > -1){
+                    printTest(getDonations(reasonId),getTotals(reasonId),reasonId);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
             
             for (int i = 0; i < reciptData.length; i++) {
                 try {
@@ -400,27 +414,195 @@ class C2pPrinter {
         return PrinterIsAvailable;
     }
     
-    private void printList(JSONArray jsonArray) throws Epos2Exception {
-        for(int i = 0; i < jsonArray.length(); i++){
-            myPrinter.addTextAlign(Printer.ALIGN_LEFT);
-            myPrinter.addText("******");
-            myPrinter.addTextAlign(Printer.ALIGN_RIGHT);
-            myPrinter.addText("******");
+    
+    private void printTest(JSONArray jsonArrayDonations,JSONArray jsonArrayTotals, int reasonId){
+        try {
+            CreateMyData(jsonArrayDonations,jsonArrayTotals, reasonId);
+            
+            myPrinter.beginTransaction();
+            myPrinter.sendData(Printer.PARAM_DEFAULT);
+            myPrinter.endTransaction();
+            myPrinter.clearCommandBuffer();
+            System.out.println("finished printing file");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
     
-    private void printListTest() throws Epos2Exception {
-        for(int i = 0; i < 20; i++){
-            myPrinter.addTextAlign(Printer.ALIGN_LEFT);
-            myPrinter.addText("******");
-            myPrinter.addTextAlign(Printer.ALIGN_RIGHT);
-            myPrinter.addText("******\n");
+    private void CreateMyData(JSONArray jsonArrayDonations,JSONArray jsonArrayTotals, int reasonId) throws Epos2Exception, JSONException {
+        NumberFormat formatter = NumberFormat.getCurrencyInstance();
+        formatter.setMaximumFractionDigits(2);
+        DecimalFormat decimalFormat = new DecimalFormat(" #,##0.00 '%'");
+    
+        String reasonName = "";
+        for(ReasonObject obj:globalV.reasonsObjs){
+            if (obj.id == reasonId){
+                reasonName = obj.name;
+            }
         }
+    
+        System.out.println("CreateMyData reasonId: " + reasonId);
+        System.out.println("CreateMyData reasonName: " + reasonName);
     
         myPrinter.addCut(Printer.CUT_FEED);
         myPrinter.beginTransaction();
         myPrinter.sendData(Printer.PARAM_DEFAULT);
         myPrinter.endTransaction();
         myPrinter.clearCommandBuffer();
+    
+        try{
+            Bitmap myBitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/download/" + "Logo.jpg");
+            // ((512 - myBitmap.getWidth()) / 2
+            myPrinter.addImage(myBitmap, 0, 0, myBitmap.getWidth(), myBitmap.getHeight(), Printer.PARAM_DEFAULT, Printer.PARAM_DEFAULT, Printer.HALFTONE_DITHER, Printer.PARAM_DEFAULT, Printer.COMPRESS_AUTO);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        
+        String reversedName = "";
+        for(int i = reasonName.length() - 1; i >= 0; i--)
+        {
+            reversedName = reversedName + reasonName.charAt(i);
+        }
+        byte[] commandsBOLD = new byte[]{0x1B, 0x21, 0x10};
+        byte[] commandsNormal = new byte[]{0x1B, 0x21, 0x03};
+        myPrinter.addCommand(commandsBOLD);
+        
+        myPrinter.addTextAlign(Printer.ALIGN_CENTER);// by default the alignment is left.
+        myPrinter.addFeedLine(1);// Calling this API causes the printer positioned at "the beginning of the line."
+    
+        myPrinter.addText("in honor of: " + reversedName + "\n");
+    
+        JSONObject jsonObject1 = jsonArrayTotals.getJSONObject(0);
+        myPrinter.addText(formatter.format(jsonObject1.getDouble("HonoreeTotal")));
+        myPrinter.addFeedLine(0);
+        myPrinter.addTextAlign(Printer.ALIGN_CENTER);
+    
+        String totalBuilder = decimalFormat.format(jsonObject1.getDouble("HonoreePercent") * 100) +
+                "\t\t\t" +
+                formatter.format(jsonObject1.getDouble("HonoreeGoal")) + "\n";
+        myPrinter.addText(totalBuilder);
+        
+        if(jsonObject1.has("ParentID")){
+            String pReasonName = "";
+            for(ReasonObject obj:globalV.reasonsObjs){
+                if (obj.id == jsonObject1.getInt("ParentID")){
+                    pReasonName = obj.name;
+                }
+            }
+            String reversedName1 = "";
+            for(int i = pReasonName.length() - 1; i >= 0; i--)
+            {
+                reversedName1 = reversedName1 + pReasonName.charAt(i);
+            }
+    
+            System.out.println("CreateMyData jsonObject1.getInt(\"ParentID\"): " + jsonObject1.getInt("ParentID"));
+            System.out.println("CreateMyData pReasonName: " + pReasonName);
+    
+    
+            myPrinter.addFeedLine(1);
+            myPrinter.addText("\n" + reversedName1);
+            myPrinter.addFeedLine(1);
+    
+            String totalBuilder1 = decimalFormat.format(jsonObject1.getDouble("HonoreeParentPercent") * 100) +
+                    "\t\t\t" +
+                    formatter.format(jsonObject1.getDouble("HonoreeParentGoal")) + "\n";
+            myPrinter.addText(totalBuilder1);
+            
+        }
+        
+    
+        myPrinter.addCommand(commandsNormal);
+        myPrinter.addTextFont(Printer.PARAM_DEFAULT);
+        myPrinter.addTextAlign(Printer.ALIGN_LEFT);
+        myPrinter.addFeedLine(1);
+        
+        for(int i = 0; i < jsonArrayDonations.length(); i ++){
+            JSONObject jsonObject = jsonArrayDonations.getJSONObject(i);
+            String name = jsonObject.getString("FullName");
+            StringBuilder builder = new StringBuilder();
+            builder.append(name);
+            builder.append("\t");
+            if(name.length() < 8)builder.append("\t");
+            if(name.length() < 16)builder.append("\t");
+            if(name.length() < 24)builder.append("\t");
+            builder.append(formatter.format(jsonObject.getDouble("Amount")));
+            builder.append("\n");
+            myPrinter.addTextAlign(Printer.ALIGN_LEFT);
+            myPrinter.addText(builder.toString());
+        }
+    
+        myPrinter.addText("\n");
+        
+        try{
+            Bitmap myBitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/download/" + "ReceiptLogo.jpg");
+            myPrinter.addImage(myBitmap, 0, 0, myBitmap.getWidth(), myBitmap.getHeight(), Printer.PARAM_DEFAULT, Printer.PARAM_DEFAULT, Printer.HALFTONE_DITHER, Printer.PARAM_DEFAULT, Printer.COMPRESS_AUTO);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        
+        myPrinter.addCut(Printer.CUT_FEED);
     }
+    
+    private JSONArray getDonations(int reasonId) {
+        try {
+            URL url = new URL("https://api.dinner.systems/api/values/DeviceLogin/"+ globalV.deviceMac + "/ReasonDetails" + reasonId + "/1");
+            Log.d("getDonations url", url.toString());
+            HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+            urlConnection.setRequestProperty("Connection", "Close");
+            Log.d("getDonations", String.valueOf(urlConnection.getResponseCode()));
+            Log.d("getDonations", urlConnection.getResponseMessage());
+            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            StringBuilder total = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                total.append(line);
+            }
+            Log.d("getDonations", total.toString());
+            in.close();
+            urlConnection.disconnect();
+            if(total.length() > 2){
+                JSONArray jsonArray = new JSONArray(total.toString());
+                
+                return jsonArray;
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
+    private JSONArray getTotals(int reasonId) {
+        try {
+            URL url = new URL("https://api.dinner.systems/api/values/DeviceLogin/7185551212/ReasonTotal" + reasonId +"/1");
+            Log.d("getDonations url", url.toString());
+            HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+            urlConnection.setRequestProperty("Connection", "Close");
+            Log.d("getDonations", String.valueOf(urlConnection.getResponseCode()));
+            Log.d("getDonations", urlConnection.getResponseMessage());
+            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            StringBuilder total = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                total.append(line);
+            }
+            Log.d("getDonations", total.toString());
+            in.close();
+            urlConnection.disconnect();
+            if(total.length() > 2){
+                JSONArray jsonArray = new JSONArray(total.toString());
+
+                return jsonArray;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
+    
 }
