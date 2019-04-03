@@ -101,65 +101,62 @@ public class LoginActivity extends Activity {
         background = findViewById(R.id.login_root);
         versionTv = findViewById(R.id.version);
         
-        versionTv.setText(getString(R.string.Version)+ BuildConfig.VERSION_NAME);
+        versionTv.setText(getString(R.string.Version) + BuildConfig.VERSION_NAME);
         
         cashierNum.addTextChangedListener(new PhoneNumberFormattingTextWatcher());
-    
+        
         cashierNum.requestFocus();
-        globalV.PRINTER_IPSTATE ="";
+        globalV.PRINTER_IPSTATE = "";
         globalV.deviceMac = getMacAddr();
-    
+        
         httpGetImage();
-    
+        
         
         gettingInfo.setText("");
-        ipText.setText("MAC: "+ globalV.deviceMac +"               Device:"+new nonStaticUtilities().getDeviceName(this)+"                  IP: " + getMyLocalIpAddress());
+        ipText.setText("MAC: " + globalV.deviceMac + "               Device:" + new nonStaticUtilities().getDeviceName(this) + "                  IP: " + getMyLocalIpAddress());
         globalV.postLogin = false;
-    
+        
         cashierNum.setOnKeyListener(new View.OnKeyListener() {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 if ((keyCode == 160) && event.getAction() == KeyEvent.ACTION_DOWN && cashierNum.getText().length() > 1) {
                     printerNum.requestFocus();
                     return true;
                 }
-                if ((keyCode == 156) && event.getAction() == KeyEvent.ACTION_DOWN){
-                    Intent mintent = new Intent(LoginActivity.this,LoginMenu.class);
+                if ((keyCode == 156) && event.getAction() == KeyEvent.ACTION_DOWN) {
+                    Intent mintent = new Intent(LoginActivity.this, LoginMenu.class);
                     startActivity(mintent);
                     return true;
                 }
-
+                
                 return false;
             }
         });
-    
+        
         printerNum.setOnKeyListener(new View.OnKeyListener() {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 if ((keyCode == 160 || keyCode == 66) && event.getAction() == KeyEvent.ACTION_DOWN && printerNum.getText().length() > 1 && cashierNum.getText().length() > 1) {  // if ((keyCode == 160) && event.getAction() == KeyEvent.ACTION_DOWN && printerNum.getText().length() > 1 && cashierNum.getText().length() > 1) {
-                    if(TrdCheckServerReachebility()){
-                        getInfo();
-                        globalV.PRINTER_NUM = printerNum.getText().toString();
-                        return true;
-                    }else {
-                        Toast.makeText(LoginActivity.this, "No Network", Toast.LENGTH_SHORT).show();
-                    }
                     
-                }else if(keyCode== 67 && event.getAction() == KeyEvent.ACTION_DOWN && printerNum.getText().length() < 1){
+                    getInfo();
+                    globalV.PRINTER_NUM = printerNum.getText().toString();
+                    
+                    return true;
+                } else if (keyCode == 67 && event.getAction() == KeyEvent.ACTION_DOWN && printerNum.getText().length() < 1) {
                     cashierNum.requestFocus();
                 }
-                if ((keyCode == 156) && event.getAction() == KeyEvent.ACTION_DOWN){
-                    Intent mintent = new Intent(LoginActivity.this,LoginMenu.class);
+                if ((keyCode == 156) && event.getAction() == KeyEvent.ACTION_DOWN) {
+                    Intent mintent = new Intent(LoginActivity.this, LoginMenu.class);
                     startActivity(mintent);
                     return true;
                 }
                 return false;
             }
         });
-
-        if(isEthernetConnected()){
+        
+        if (isEthernetConnected()) {
             System.out.println("##################  CONNECTED To Ethernet");
-        }else{
-            if(!isNetworkAvailable()){
-                connectWiFi("DSHT","dShS@5227#","WPA2");
+        } else {
+            if (!isNetworkAvailable()) {
+                connectWiFi("DSHT", "dShS@5227#", "WPA2");
             }
         }
     }
@@ -168,7 +165,7 @@ public class LoginActivity extends Activity {
     protected void onPause() {
         super.onPause();
         System.out.println("activity paused");
-    
+        
         runThreads = false;
     }
     
@@ -176,22 +173,22 @@ public class LoginActivity extends Activity {
     protected void onResume() {
         super.onResume();
         
-        if(new nonStaticUtilities().getEventName(this).length() < 1){
-            Intent intent = new Intent(LoginActivity.this,register.class);
+        if (new nonStaticUtilities().getEventName(this).length() < 1) {
+            Intent intent = new Intent(LoginActivity.this, register.class);
             startActivity(intent);
         }
         eventtext.setText(new nonStaticUtilities().getEventName(this));
         
-        if (ContextCompat.checkSelfPermission(LoginActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(LoginActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             
             if (ActivityCompat.shouldShowRequestPermissionRationale(LoginActivity.this,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             } else {
                 ActivityCompat.requestPermissions(LoginActivity.this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},0);
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
             }
         }
-    
+        
         waitForNet();
         
         startStatusBarUpdater();
@@ -215,18 +212,18 @@ public class LoginActivity extends Activity {
             @Override
             public void run() {
                 runThreads = true;
-                while(runThreads){
-                    try{
+                while (runThreads) {
+                    try {
                         final int id = getConnectionState();
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
                             public void run() {
                                 wifiic.setImageResource(id);
-                                ipText.setText("MAC: "+getMacAddr()+"               Device:"+new nonStaticUtilities().getDeviceName(LoginActivity.this)+"                  IP: " + getMyLocalIpAddress());
+                                ipText.setText("MAC: " + getMacAddr() + "               Device:" + new nonStaticUtilities().getDeviceName(LoginActivity.this) + "                  IP: " + getMyLocalIpAddress());
                             }
                         });
-    
+                        
                         Thread.sleep(2000);
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                     
@@ -235,37 +232,49 @@ public class LoginActivity extends Activity {
             }
         }).start();
         
-    
+        
     }
     
-    public void getInfo(){
-        if(!globalV.postLogin){
-            globalV.postLogin = true;
-            gettingInfo.setText(getString(R.string.getting_info));
-            background.setBackgroundColor(Color.parseColor("#b7b7b7"));
-            final String phoneNum = cashierNum.getText().toString();
-            final String priNum = printerNum.getText().toString();
-    
-            new Thread( new Runnable() {
-                @Override
-                public void run() {
+    public void getInfo() {
+        
+        final String phoneNum = cashierNum.getText().toString();
+        final String priNum = printerNum.getText().toString();
+        
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                
+                if (checkServerReachebility()) {
+                    
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            gettingInfo.setText(getString(R.string.getting_info));
+                            background.setBackgroundColor(Color.parseColor("#b7b7b7"));
+                        }
+                    });
+                    
+                    
+                    globalV.postLogin = true;
+                    
+                    
                     URL url = null;
                     HttpsURLConnection urlConnection;
                     BufferedReader reader = null;
                     try {
-                        String phone = phoneNum.replaceAll("\\s","");
+                        String phone = phoneNum.replaceAll("\\s", "");
                         phone = phone.replaceAll("[^0-9+]", "");
-                        url = new URL(globalV.URLStart+"/api/values/DeviceLogin/"+macAd+"/"+ phone +"/"+ priNum);
+                        url = new URL(globalV.URLStart + "/api/values/DeviceLogin/" + macAd + "/" + phone + "/" + priNum);
                         urlConnection = (HttpsURLConnection) url.openConnection();
-                        urlConnection.setRequestProperty("Connection","Close");
-                        DsLogs.writeLog("Opened connection to "+url.toString());
-                        DsLogs.writeLog("ResponseCode "+String.valueOf(urlConnection.getResponseCode()));
-                        DsLogs.writeLog("ResponseMessage "+urlConnection.getResponseMessage());
+                        urlConnection.setRequestProperty("Connection", "Close");
+                        DsLogs.writeLog("Opened connection to " + url.toString());
+                        DsLogs.writeLog("ResponseCode " + String.valueOf(urlConnection.getResponseCode()));
+                        DsLogs.writeLog("ResponseMessage " + urlConnection.getResponseMessage());
                         
-                        Log.d("Opened connection to",url.toString());
-                        Log.d("Shimon#################",String.valueOf(urlConnection.getResponseCode()));
-                        Log.d("Shimon#################",urlConnection.getResponseMessage());
-                
+                        Log.d("Opened connection to", url.toString());
+                        Log.d("Shimon#################", String.valueOf(urlConnection.getResponseCode()));
+                        Log.d("Shimon#################", urlConnection.getResponseMessage());
+                        
                         InputStream in = new BufferedInputStream(urlConnection.getInputStream());
                         reader = new BufferedReader(new InputStreamReader(in));
                         StringBuilder total = new StringBuilder();
@@ -273,34 +282,36 @@ public class LoginActivity extends Activity {
                         while ((line = reader.readLine()) != null) {
                             total.append(line);
                         }
-                        System.out.println("total: " +total);
-    
-                        DsLogs.writeLog("Response: " +total.toString());
-                
-                        try{
+                        System.out.println("total: " + total);
+                        
+                        DsLogs.writeLog("Response: " + total.toString());
+                        
+                        try {
                             in.close();
                             urlConnection.disconnect();
-                        }catch (IOException e) {
+                        } catch (IOException e) {
                             DsLogs.writeLog("catch: " + e.toString());
                         }
-    
+                        
                         globalV.logged_in = true;
-                
-                
+                        
+                        
                         JSONArray infoJSON = new JSONArray(total.toString());
                         
                         globalV.fullName = infoJSON.getJSONObject(0).getString("FullName");
                         globalV.eventName = infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).getString("EventName");
                         globalV.EventPIN = String.valueOf(infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).getInt("EventPIN"));
-                        if(infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).has("CharidyEventID")){
+                        if (infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).has("CharidyEventID")) {
                             globalV.chairdyEventId = infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).getString("CharidyEventID");
-                        }else {
+                        } else {
                             globalV.chairdyEventId = "";
                         }
-                        if(infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).has("PrinterMacAddress")){globalV.printerMAC = infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).getString("PrinterMacAddress");}
+                        if (infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).has("PrinterMacAddress")) {
+                            globalV.printerMAC = infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).getString("PrinterMacAddress");
+                        }
                         
                         globalV.deviceName = infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).getJSONArray("D").getJSONObject(0).getString("DeviceName");
-                        new nonStaticUtilities().saveDeviceName(infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).getJSONArray("D").getJSONObject(0).getString("DeviceName"),LoginActivity.this);
+                        new nonStaticUtilities().saveDeviceName(infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).getJSONArray("D").getJSONObject(0).getString("DeviceName"), LoginActivity.this);
                         
                         JSONObject p = infoJSON.getJSONObject(0).getJSONArray("E").getJSONObject(0).getJSONArray("D").getJSONObject(0).getJSONArray("P").getJSONObject(0);
                         globalV.FTPPass = p.getString("FTPPass");
@@ -312,33 +323,44 @@ public class LoginActivity extends Activity {
                         globalV.BUTTON_CHECK_ON = true;
                         globalV.checkLastYear = false;
                         
-                        if(p.has("O")){
+                        if (p.has("O")) {
                             JSONArray O = p.getJSONArray("O");
-                            for(int i = 0; i < O.length(); i++){
-                                if(O.getJSONObject(i).has("MethodName")){
-                                    if(O.getJSONObject(i).getString("MethodName").contains("buttonAnonymous"))globalV.BUTTON_ANONYMUS_ON = true;
-                                    if(O.getJSONObject(i).getString("MethodName").contains("buttonReasons"))globalV.BUTTON_HONERY_ON = true;
-                                    if(O.getJSONObject(i).getString("MethodName").contains("ButtonCheck"))globalV.BUTTON_CHECK_ON = false;
-    
-                                    if(O.getJSONObject(i).getString("MethodName").contains("LastYear"))globalV.checkLastYear = true;
+                            for (int i = 0; i < O.length(); i++) {
+                                if (O.getJSONObject(i).has("MethodName")) {
+                                    if (O.getJSONObject(i).getString("MethodName").contains("buttonAnonymous"))
+                                        globalV.BUTTON_ANONYMUS_ON = true;
+                                    if (O.getJSONObject(i).getString("MethodName").contains("buttonReasons"))
+                                        globalV.BUTTON_HONERY_ON = true;
+                                    if (O.getJSONObject(i).getString("MethodName").contains("ButtonCheck"))
+                                        globalV.BUTTON_CHECK_ON = false;
+                                    
+                                    if (O.getJSONObject(i).getString("MethodName").contains("LastYear"))
+                                        globalV.checkLastYear = true;
                                 }
                                 
+                            }
                         }
+                        
+                        if (p.has("PrinterName")) {
+                            globalV.printerName = p.getString("PrinterName");
                         }
-    
-                        if(p.has("PrinterName")){globalV.printerName = p.getString("PrinterName");}
-                        if(p.has("PrinterMacAddress")){globalV.printerMAC_WIFI = p.getString("PrinterMacAddress");}
-                        if(p.has("PrinterMacAddressLAN")){globalV.printerMAC_LAN = p.getString("PrinterMacAddressLAN");}    //Todo fix this
-                        if(isEthernetConnected()){
+                        if (p.has("PrinterMacAddress")) {
+                            globalV.printerMAC_WIFI = p.getString("PrinterMacAddress");
+                        }
+                        if (p.has("PrinterMacAddressLAN")) {
+                            globalV.printerMAC_LAN = p.getString("PrinterMacAddressLAN");
+                        }    //Todo fix this
+                        if (isEthernetConnected()) {
                             globalV.printerMAC = globalV.printerMAC_LAN;
                             globalV.MacMode = " L ";
-                        }else  {
+                        } else {
                             globalV.printerMAC = globalV.printerMAC_WIFI;
                             globalV.MacMode = " W ";
                         }
                         
                         
-                    } catch (IOException e) {DsLogs.writeLog("catch: " + e.toString());
+                    } catch (IOException e) {
+                        DsLogs.writeLog("catch: " + e.toString());
                         e.printStackTrace();
                         globalV.logged_in = false;
                         globalV.postLogin = false;
@@ -350,7 +372,8 @@ public class LoginActivity extends Activity {
                                 finish();
                             }
                         });
-                    } catch (JSONException e) {DsLogs.writeLog("catch: " + e.toString());
+                    } catch (JSONException e) {
+                        DsLogs.writeLog("catch: " + e.toString());
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
                             public void run() {
                                 Toast.makeText(LoginActivity.this, "INVALID PRINTER NUMBER", Toast.LENGTH_SHORT).show();
@@ -360,117 +383,126 @@ public class LoginActivity extends Activity {
                         globalV.logged_in = false;
                         globalV.postLogin = false;
                         new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            public void run() {
+                                gettingInfo.setText("");
+                                background.setBackgroundColor(Color.parseColor("#ffffff"));
+                                finish();
+                            }
+                        });
+                        
+                    }
+                    
+                    getReasons();
+                    
+                } else {
+                    runOnUiThread(new Runnable() {
+                        @Override
                         public void run() {
-                            //Toast.makeText(LoginActivity.this, "Error. Try again. ", Toast.LENGTH_SHORT).show();
-                            gettingInfo.setText("");
-                            background.setBackgroundColor(Color.parseColor("#ffffff"));
-                            finish();
+                            Toast.makeText(LoginActivity.this, "No Network", Toast.LENGTH_SHORT).show();
                         }
                     });
-                    
-                    }
-
-                    getReasons();
                 }
-            }).start();
-        }
+                
+            }
+        }).start();
     }
     
-    public void getReasons(){
+    public void getReasons() {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             public void run() {
                 gettingInfo.setText(getString(R.string.getting_reasons));
             }
         });
         
-                    URL url = null;
-                    HttpsURLConnection urlConnection;
-                    BufferedReader reader = null;
-                    try {
-                        url = new URL(globalV.URLStart+"/api/values/PaymentReasons/"+macAd);
-                        urlConnection = (HttpsURLConnection) url.openConnection();
-                        urlConnection.setRequestProperty("Connection","Close");
-                        Log.d("Opened connection to",url.toString());
-                        InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                        reader = new BufferedReader(new InputStreamReader(in));
-                        
-                        Log.d("Shimon#################",String.valueOf(urlConnection.getResponseCode()));
-                        Log.d("Shimon#################",urlConnection.getResponseMessage());
-                        DsLogs.writeLog("Opened connection to "+url.toString());
-                        DsLogs.writeLog("ResponseCode "+String.valueOf(urlConnection.getResponseCode()));
-                        DsLogs.writeLog("ResponseMessage "+urlConnection.getResponseMessage());
-                        StringBuilder total = new StringBuilder();
-                        String line;
-                        if(reader == null){
-                            total.append("");
-                        }else{
-                            while ((line = reader.readLine()) != null) {
-                                total.append(line);
-                            }
-                        }
-                        
-                        Log.d("total: " ,total.toString());
-                        DsLogs.writeLog("Response: " +total.toString());
-                        try{
-                            System.out.println("in try...");
-                            in.close();
-                            urlConnection.disconnect();
-                            System.out.println("after try...");
-                        }catch (IOException e) {DsLogs.writeLog("catch: " + e.toString());
-                            System.out.println("error closing.......");
-                        }
-                        
-                        JSONArray reasonJSON = new JSONArray(total.toString());
-                        globalV.reasonsObjs.clear();
-                        globalV.reasons.clear();
-                        for(int i = 0; i<reasonJSON.length();i++){
-                            JSONObject jsonobject = reasonJSON.getJSONObject(i);
-                            globalV.reasonsObjs.add(new ReasonObject(jsonobject.getString("reasonNameJewish"),jsonobject.getInt("reasonId"),jsonobject.getInt("number")));
-                        }
-                        for(int i = 0; i<reasonJSON.length();i++){
-                            globalV.reasons.add(globalV.reasonsObjs.get(i).name);
-                        }
-                        
+        URL url = null;
+        HttpsURLConnection urlConnection;
+        BufferedReader reader = null;
+        try {
+            url = new URL(globalV.URLStart + "/api/values/PaymentReasons/" + macAd);
+            urlConnection = (HttpsURLConnection) url.openConnection();
+            urlConnection.setRequestProperty("Connection", "Close");
+            Log.d("Opened connection to", url.toString());
+            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+            reader = new BufferedReader(new InputStreamReader(in));
+            
+            Log.d("Shimon#################", String.valueOf(urlConnection.getResponseCode()));
+            Log.d("Shimon#################", urlConnection.getResponseMessage());
+            DsLogs.writeLog("Opened connection to " + url.toString());
+            DsLogs.writeLog("ResponseCode " + String.valueOf(urlConnection.getResponseCode()));
+            DsLogs.writeLog("ResponseMessage " + urlConnection.getResponseMessage());
+            StringBuilder total = new StringBuilder();
+            String line;
+            if (reader == null) {
+                total.append("");
+            } else {
+                while ((line = reader.readLine()) != null) {
+                    total.append(line);
+                }
+            }
+            
+            Log.d("total: ", total.toString());
+            DsLogs.writeLog("Response: " + total.toString());
+            try {
+                System.out.println("in try...");
+                in.close();
+                urlConnection.disconnect();
+                System.out.println("after try...");
+            } catch (IOException e) {
+                DsLogs.writeLog("catch: " + e.toString());
+                System.out.println("error closing.......");
+            }
+            
+            JSONArray reasonJSON = new JSONArray(total.toString());
+            globalV.reasonsObjs.clear();
+            globalV.reasons.clear();
+            for (int i = 0; i < reasonJSON.length(); i++) {
+                JSONObject jsonobject = reasonJSON.getJSONObject(i);
+                globalV.reasonsObjs.add(new ReasonObject(jsonobject.getString("reasonNameJewish"), jsonobject.getInt("reasonId"), jsonobject.getInt("number")));
+            }
+            for (int i = 0; i < reasonJSON.length(); i++) {
+                globalV.reasons.add(globalV.reasonsObjs.get(i).name);
+            }
+            
+            //    finish();
+            
+            Intent mintent = new Intent(LoginActivity.this, MainActivity.class);
+            startActivity(mintent);
+            
+        } catch (IOException e) {
+            DsLogs.writeLog("catch: " + e.toString());
+            e.printStackTrace();
+            globalV.logged_in = false;
+            globalV.postLogin = false;
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                public void run() {
+                    //Toast.makeText(LoginActivity.this, "Error. Try again. ", Toast.LENGTH_SHORT).show();
+                    gettingInfo.setText("");
+                    background.setBackgroundColor(Color.parseColor("#ffffff"));
                     //    finish();
-    
-                        Intent mintent = new Intent(LoginActivity.this,MainActivity.class);
-                        startActivity(mintent);
-                
-                    } catch (IOException e) {DsLogs.writeLog("catch: " + e.toString());
-                        e.printStackTrace();
-                        globalV.logged_in = false;
-                        globalV.postLogin = false;
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            public void run() {
-                                //Toast.makeText(LoginActivity.this, "Error. Try again. ", Toast.LENGTH_SHORT).show();
-                                gettingInfo.setText("");
-                                background.setBackgroundColor(Color.parseColor("#ffffff"));
-                            //    finish();
-                            }
-                        });
-                    } catch (JSONException e) {DsLogs.writeLog("catch: " + e.toString());
-                        e.printStackTrace();
-                        globalV.logged_in = false;
-                        globalV.postLogin = false;
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        public void run() {
-                            //Toast.makeText(LoginActivity.this, "Error. Try again. ", Toast.LENGTH_SHORT).show();
-                            gettingInfo.setText("");
-                            background.setBackgroundColor(Color.parseColor("#ffffff"));
-                         //   finish();
-                        }
-                    });
-                    
-                    }
-    
-    
+                }
+            });
+        } catch (JSONException e) {
+            DsLogs.writeLog("catch: " + e.toString());
+            e.printStackTrace();
+            globalV.logged_in = false;
+            globalV.postLogin = false;
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                public void run() {
+                    //Toast.makeText(LoginActivity.this, "Error. Try again. ", Toast.LENGTH_SHORT).show();
+                    gettingInfo.setText("");
+                    background.setBackgroundColor(Color.parseColor("#ffffff"));
+                    //   finish();
+                }
+            });
+            
+        }
         
         
     }
     
-    public void connectWiFi(String SSID,String password,String Security) {
+    public void connectWiFi(String SSID, String password, String Security) {
         try {
-    
+            
             WifiConfiguration conf = new WifiConfiguration();
             conf.SSID = "\"" + SSID + "\"";   // Please note the quotes. String should contain ssid in quotes
             conf.status = WifiConfiguration.Status.ENABLED;
@@ -527,7 +559,7 @@ public class LoginActivity extends Activity {
             }
             
             //        WifiManager wifiManager = (WifiManager) getActivity().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            WifiManager wifiManager = (WifiManager)this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            WifiManager wifiManager = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
             
             wifiManager.setWifiEnabled(true);
             
@@ -548,11 +580,12 @@ public class LoginActivity extends Activity {
                 }
             }
             
-        } catch (Exception e) {DsLogs.writeLog("catch: " + e.toString());
+        } catch (Exception e) {
+            DsLogs.writeLog("catch: " + e.toString());
             e.printStackTrace();
         }
         
-       // Toast.makeText(LoginActivity.this, getMyLocalIpAddress(), Toast.LENGTH_LONG).show();
+        // Toast.makeText(LoginActivity.this, getMyLocalIpAddress(), Toast.LENGTH_LONG).show();
     }
     
     public static String getMacAddr() {
@@ -576,8 +609,9 @@ public class LoginActivity extends Activity {
                 }
                 return res1.toString();
             }
-        } catch (Exception ex) {DsLogs.writeLog("catch: " + ex.toString());
-
+        } catch (Exception ex) {
+            DsLogs.writeLog("catch: " + ex.toString());
+            
             //handle exception
         }
         return "";
@@ -596,26 +630,27 @@ public class LoginActivity extends Activity {
                     }
                 }
             }
-        } catch (Exception e) {DsLogs.writeLog("catch: " + e.toString());
+        } catch (Exception e) {
+            DsLogs.writeLog("catch: " + e.toString());
             // Handle Exception
         }
         return "";
     }
     
-    boolean isWifiConnected(){
+    boolean isWifiConnected() {
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         return mWifi.isConnected();
     }
     
-    Boolean isEthernetConnected(){
+    Boolean isEthernetConnected() {
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_ETHERNET);
         return mWifi.isConnected();
     }
     
     
-    void waitForNet(){
+    void waitForNet() {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -646,14 +681,14 @@ public class LoginActivity extends Activity {
         return activeNetworkInfo != null && activeNetworkInfo.isConnectedOrConnecting();
     }
     
-    boolean checkServerReachebility(){
+    boolean checkServerReachebility() {
         boolean serverIsReacheble = false;
         try {
             URL url = new URL("http://connectivitycheck.gstatic.com/generate_204");
             System.out.println(url);
             URLConnection conn = url.openConnection();
             HttpURLConnection httpConn = (HttpURLConnection) conn;
-            httpConn.setRequestProperty("Connection","Close");
+            httpConn.setRequestProperty("Connection", "Close");
             httpConn.setAllowUserInteraction(false);
             httpConn.setInstanceFollowRedirects(true);
             httpConn.setRequestMethod("GET");
@@ -675,45 +710,6 @@ public class LoginActivity extends Activity {
         return serverIsReacheble;
     }
     
-    boolean TrdCheckServerReachebility(){
-        final boolean[] serverIsReacheble = {false};
-        Thread trd = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    URL url = new URL("http://connectivitycheck.gstatic.com/generate_204");
-                    System.out.println(url);
-                    URLConnection conn = url.openConnection();
-                    HttpURLConnection httpConn = (HttpURLConnection) conn;
-                    httpConn.setAllowUserInteraction(false);
-                    httpConn.setInstanceFollowRedirects(true);
-                    httpConn.setRequestMethod("GET");
-                    httpConn.setConnectTimeout(8000);
-                    httpConn.setReadTimeout(8000);
-                    httpConn.connect();
-                    try {
-                        int response = httpConn.getResponseCode();
-                        System.out.println(response);
-                        if (response == 204) {
-                            serverIsReacheble[0] = true;
-                        }
-                    } catch (Exception e) {
-                        System.out.println("204 FAILED");
-                    }
-                } catch (Exception e) {
-                    System.out.println("204 FAILED");
-                }
-            }
-        });
-        trd.start();
-        try {
-            trd.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    
-        return serverIsReacheble[0];
-    }
 
 //    public void trustAllCertificates() {
 //        try {
@@ -748,44 +744,44 @@ public class LoginActivity extends Activity {
 //        }
 //    }
     
-    int getConnectionState(){
-        if(isEthernetConnected()){
-            if(checkServerReachebility()){
+    int getConnectionState() {
+        if (isEthernetConnected()) {
+            if (checkServerReachebility()) {
                 return ETHERNET_GOOD;
-            }else{
-                return  ETHERNET_NO_NET;
+            } else {
+                return ETHERNET_NO_NET;
             }
             
-        }else if(isWifiConnected()){
+        } else if (isWifiConnected()) {
             WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
             WifiInfo wifiInfo = wifiManager.getConnectionInfo();
             
-            if(checkServerReachebility()){
+            if (checkServerReachebility()) {
                 switch (WifiManager.calculateSignalLevel(wifiInfo.getRssi(), 5)) {
                     case 0:
-                        return  WIFI_GOOD_0;
+                        return WIFI_GOOD_0;
                     case 1:
-                        return  WIFI_GOOD_1;
+                        return WIFI_GOOD_1;
                     case 2:
-                        return  WIFI_GOOD_2;
+                        return WIFI_GOOD_2;
                     case 3:
-                        return  WIFI_GOOD_3;
+                        return WIFI_GOOD_3;
                     case 4:
-                        return  WIFI_GOOD_4;
+                        return WIFI_GOOD_4;
                 }
                 
-            }else{
+            } else {
                 switch (NetworkUtilities.signelStrength) {
                     case 0:
-                        return  WIFI_NO_NET_0;
+                        return WIFI_NO_NET_0;
                     case 1:
-                        return  WIFI_NO_NET_1;
+                        return WIFI_NO_NET_1;
                     case 2:
-                        return  WIFI_NO_NET_2;
+                        return WIFI_NO_NET_2;
                     case 3:
-                        return  WIFI_NO_NET_3;
+                        return WIFI_NO_NET_3;
                     case 4:
-                        return  WIFI_NO_NET_4;
+                        return WIFI_NO_NET_4;
                 }
             }
         }
@@ -801,7 +797,7 @@ public class LoginActivity extends Activity {
                 try {
                     URL url = new URL("http://printserver.c2p.group:7647/Events/ReceiptLogo.png");
                     urlConnection = (HttpURLConnection) url.openConnection();
-                    urlConnection.setRequestProperty("Connection","Close");
+                    urlConnection.setRequestProperty("Connection", "Close");
                     Log.d("httpGetImage", url.toString() + "  ResponseCode: " + String.valueOf(urlConnection.getResponseCode()) + " " + urlConnection.getResponseMessage());
                     if (urlConnection.getResponseCode() == 200) {
                         InputStream in = new BufferedInputStream(urlConnection.getInputStream());
@@ -810,25 +806,25 @@ public class LoginActivity extends Activity {
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                } finally{
-                    if(urlConnection != null)
+                } finally {
+                    if (urlConnection != null)
                         urlConnection.disconnect();
                 }
                 
-                if(img != null){
-                    try{
+                if (img != null) {
+                    try {
                         new nonStaticUtilities().saveImageToDisk(img, LoginActivity.this, "ReceiptLogo");
-                    }catch(Exception e){
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
-    
+                
                 img = null;
-    
+                
                 try {
-                    URL url = new URL("http://printserver.c2p.group:7647/Events/"+ new nonStaticUtilities().getEventPin(LoginActivity.this) + "/Logo.png");
+                    URL url = new URL("http://printserver.c2p.group:7647/Events/" + new nonStaticUtilities().getEventPin(LoginActivity.this) + "/Logo.png");
                     urlConnection = (HttpURLConnection) url.openConnection();
-                    urlConnection.setRequestProperty("Connection","Close");
+                    urlConnection.setRequestProperty("Connection", "Close");
                     Log.d("httpGetImage", url.toString() + "  ResponseCode: " + String.valueOf(urlConnection.getResponseCode()) + " " + urlConnection.getResponseMessage());
                     if (urlConnection.getResponseCode() == 200) {
                         InputStream in = new BufferedInputStream(urlConnection.getInputStream());
@@ -837,15 +833,15 @@ public class LoginActivity extends Activity {
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                } finally{
-                    if(urlConnection != null)
+                } finally {
+                    if (urlConnection != null)
                         urlConnection.disconnect();
                 }
-    
-                if(img != null){
-                    try{
+                
+                if (img != null) {
+                    try {
                         new nonStaticUtilities().saveImageToDisk(img, LoginActivity.this, "Logo");
-                    }catch(Exception e){
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -855,7 +851,6 @@ public class LoginActivity extends Activity {
         thread.start();
         
     }
-    
     
     
 }

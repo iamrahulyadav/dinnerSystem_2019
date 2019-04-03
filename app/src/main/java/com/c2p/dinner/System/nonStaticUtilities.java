@@ -113,7 +113,7 @@ class nonStaticUtilities {
     }
     
     String getEventName(Context cont){
-        String ret = "No Event, Press menu to register:";
+        String ret = "No Event, Press menu to registerDevice:";
         double diffInHours = 99;
         
         try {

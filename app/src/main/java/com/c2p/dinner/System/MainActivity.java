@@ -736,17 +736,35 @@ public class MainActivity extends Activity {
         sendPost(MODE_CC);
     }
     
-    void getInfo(String phone){
-        if(TrdCheckServerReachebility()){
-            globalV.logTime = System.currentTimeMillis();
-            Bundle extras = new Bundle();
-            Intent int1 = new Intent(MainActivity.this,multiname.class);
-            extras.putString("PHONE",phone);
-            int1.putExtras(extras);
-            startActivityForResult(int1,REQ_MULTI_NAME);
-        }else{
-            Toast.makeText(MainActivity.this, "No Network", Toast.LENGTH_SHORT).show();
-        }
+    void getInfo(final String phone){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(checkServerReachebility()){
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        public void run() {
+                            globalV.logTime = System.currentTimeMillis();
+                            Bundle extras = new Bundle();
+                            Intent int1 = new Intent(MainActivity.this,multiname.class);
+                            extras.putString("PHONE",phone);
+                            int1.putExtras(extras);
+                            startActivityForResult(int1,REQ_MULTI_NAME);
+                        }
+                    });
+                    
+                }else{
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "No Network", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    
+                }
+                
+            }
+        }).start();
+        
+        
         
         
     }
@@ -789,306 +807,322 @@ public class MainActivity extends Activity {
     }
     
     void sendPost(int ref) {
-        if(TrdCheckServerReachebility()) {
-            final int fRef = ref;
-            feedback("");
-            processIcon.setVisibility(View.INVISIBLE);
-            final processDialog pd = new processDialog(this);
+        final int fRef = ref;
+        final processDialog pd = new processDialog(this);
+        
             if (accountId == 0) {
                 pd.show();
                 pd.setTitletext(getString(R.string.Account_Error));
                 pd.settext(getString(R.string.Please_reenter_Phone_Number));
                 pd.enableB();
             } else {
-                pd.show();
-                pd.settext(getString(R.string.Processing));
                 
-                Thread thread = new Thread(new Runnable() {
+                new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        globalV.logTime = System.currentTimeMillis();
-                        com.epson.epos2.printer.Printer thisPrinter = null;
-                        
-                        final int reasonId = reason;
+    
+                        if (checkServerReachebility()) {
+    
+                            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                public void run() {
+                                    feedback("");
+                                    processIcon.setVisibility(View.INVISIBLE);
+                                    pd.show();
+                                    pd.settext(getString(R.string.Processing));
+                                }
+                            });
+        
+        
+                            globalV.logTime = System.currentTimeMillis();
+                            com.epson.epos2.printer.Printer thisPrinter = null;
+        
+                            final int reasonId = reason;
+        
+                            try {
+                                startTime = SystemClock.uptimeMillis();
+                                URL url = new URL(globalV.URLStart + "/api/values/posttrans");
+                                Log.i("URL", url.toString());
+                                DsLogs.writeLog("URL: " + url.toString());
+                                HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+                                conn.setRequestProperty("Connection", "Close");
+                                conn.setRequestMethod("POST");
+                                conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+                                conn.setRequestProperty("Accept", "application/json");
+                                conn.setDoOutput(true);
+                                conn.setDoInput(true);
+            
+                                JSONObject jsonParam = new JSONObject();
+                                jsonParam.put("AccountID", accountId);
+                                jsonParam.put("Amount", amount);
+                                jsonParam.put("MacAddress", macAd);
+                                jsonParam.put("paymentReasonID", reason);
+                                jsonParam.put("Hide", charidyAnonymous);
+            
+                                if (fRef == MODE_CHECK) {
+                                    jsonParam.put("PaymentType", "Check");
+                                } else if (fRef == MODE_CASH) {
+                                    jsonParam.put("PaymentType", "Cash");
+                                } else if (fRef == MODE_PREPAY) {
+                                    jsonParam.put("PaymentType", "Prepaid");
+                                } else if (fRef == MODE_CCSWIPE) {
+                                    jsonParam.put("PaymentType", "CC");
+                                } else if (fRef == MODE_CC) {
+                                    jsonParam.put("PaymentType", "CC_Manual");
+                                }
+            
+                                if (fRef == MODE_CHECK) {
+                                    jsonParam.put("RefNum", checknumber);
+                                } else if (fRef == MODE_CC || fRef == MODE_CCSWIPE) {
+                                    jsonParam.put("RefNum", last4);
+                                } else {
+                                    jsonParam.put("RefNum", "");
+                                }
+            
+                                if (fRef == MODE_CC) {
+                                    jsonParam.put("ccNum", card);
+                                    jsonParam.put("exp", exp);
+                                    jsonParam.put("cvv", cvv);
+                                    if (MODE_CCMULTIPAYMENT) {
+                                        jsonParam.remove("PaymentType");
+                                        jsonParam.put("PaymentType", "CC_Multi_manual");
+                                        jsonParam.put("cardNumFull", card);
+                                        jsonParam.put("numOfPayments", mppayments);
+                                        jsonParam.put("monthFrequency", mpday);
+                                        jsonParam.put("monthlyAmount", mpeach);
+                                    }
+                                } else if (fRef == MODE_CCSWIPE) {
                 
-                        try {
-                            startTime = SystemClock.uptimeMillis();
-                            URL url = new URL(globalV.URLStart + "/api/values/posttrans");
-                            Log.i("URL", url.toString());
-                            DsLogs.writeLog("URL: " + url.toString());
-                            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-                            conn.setRequestProperty("Connection","Close");
-                            conn.setRequestMethod("POST");
-                            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-                            conn.setRequestProperty("Accept", "application/json");
-                            conn.setDoOutput(true);
-                            conn.setDoInput(true);
-                    
-                            JSONObject jsonParam = new JSONObject();
-                            jsonParam.put("AccountID", accountId);
-                            jsonParam.put("Amount", amount);
-                            jsonParam.put("MacAddress", macAd);
-                            jsonParam.put("paymentReasonID", reason);
-                            jsonParam.put("Hide", charidyAnonymous);
-                    
-                            if (fRef == MODE_CHECK) {
-                                jsonParam.put("PaymentType", "Check");
-                            } else if (fRef == MODE_CASH) {
-                                jsonParam.put("PaymentType", "Cash");
-                            } else if (fRef == MODE_PREPAY) {
-                                jsonParam.put("PaymentType", "Prepaid");
-                            } else if (fRef == MODE_CCSWIPE) {
-                                jsonParam.put("PaymentType", "CC");
-                            } else if (fRef == MODE_CC) {
-                                jsonParam.put("PaymentType", "CC_Manual");
-                            }
-                    
-                            if (fRef == MODE_CHECK) {
-                                jsonParam.put("RefNum", checknumber);
-                            } else if (fRef == MODE_CC || fRef == MODE_CCSWIPE) {
-                                jsonParam.put("RefNum", last4);
-                            } else {
-                                jsonParam.put("RefNum", "");
-                            }
-                    
-                            if (fRef == MODE_CC) {
-                                jsonParam.put("ccNum", card);
-                                jsonParam.put("exp", exp);
-                                jsonParam.put("cvv", cvv);
-                                if (MODE_CCMULTIPAYMENT) {
-                                    jsonParam.remove("PaymentType");
-                                    jsonParam.put("PaymentType", "CC_Multi_manual");
-                                    jsonParam.put("cardNumFull", card);
-                                    jsonParam.put("numOfPayments", mppayments);
-                                    jsonParam.put("monthFrequency", mpday);
-                                    jsonParam.put("monthlyAmount", mpeach);
+                                    jsonParam.put("ccNum", cardbuffer);
+                                    if (MODE_CCMULTIPAYMENT) {
+                                        jsonParam.remove("PaymentType");
+                                        jsonParam.put("PaymentType", "CC_Multi_swipe");
+                                        jsonParam.put("cardNumFull", cardbuffer.substring(cardbuffer.indexOf('B') + 1, cardbuffer.indexOf('^')));
+                                        String expi = cardbuffer.substring(cardbuffer.indexOf('^', cardbuffer.indexOf('^') + 1) + 1, cardbuffer.indexOf('^', cardbuffer.indexOf('^') + 1) + 5);
+                                        jsonParam.put("exp", expi.substring(2, 4) + expi.substring(0, 2));
+                                        jsonParam.put("numOfPayments", mppayments);
+                                        jsonParam.put("monthFrequency", mpday);
+                                        jsonParam.put("monthlyAmount", mpeach);
+                                    }
+                                } else {
+                                    jsonParam.put("ccNum", "");
                                 }
-                            } else if (fRef == MODE_CCSWIPE) {
-                                
-                                jsonParam.put("ccNum", cardbuffer);
-                                if (MODE_CCMULTIPAYMENT) {
-                                    jsonParam.remove("PaymentType");
-                                    jsonParam.put("PaymentType", "CC_Multi_swipe");
-                                    jsonParam.put("cardNumFull", cardbuffer.substring(cardbuffer.indexOf('B') + 1, cardbuffer.indexOf('^')));
-                                    String expi = cardbuffer.substring(cardbuffer.indexOf('^', cardbuffer.indexOf('^') + 1) + 1, cardbuffer.indexOf('^', cardbuffer.indexOf('^') + 1) + 5);
-                                    jsonParam.put("exp", expi.substring(2, 4) + expi.substring(0, 2));
-                                    jsonParam.put("numOfPayments", mppayments);
-                                    jsonParam.put("monthFrequency", mpday);
-                                    jsonParam.put("monthlyAmount", mpeach);
+            
+                                Log.i("JSON", jsonParam.toString());
+                                DsLogs.writeLog("JSON: " + jsonParam.toString());
+                                DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+                                // os.writeBytes(URLEncoder.encode(jsonParam.toString(), "UTF-8"));
+                                os.writeBytes(jsonParam.toString());
+                                os.flush();
+                                os.close();
+                                Log.i("STATUS", String.valueOf(conn.getResponseCode()));
+                                Log.i("MSG", conn.getResponseMessage());
+                                DsLogs.writeLog("ResponseCode " + String.valueOf(conn.getResponseCode()));
+                                DsLogs.writeLog("ResponseMessage " + conn.getResponseMessage());
+            
+                                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                                String decodedString;
+                                StringBuilder stringBuilder = new StringBuilder();
+                                while ((decodedString = in.readLine()) != null) {
+                                    stringBuilder.append(decodedString);
                                 }
-                            } else {
-                                jsonParam.put("ccNum", "");
-                            }
-                    
-                            Log.i("JSON", jsonParam.toString());
-                            DsLogs.writeLog("JSON: " + jsonParam.toString());
-                            DataOutputStream os = new DataOutputStream(conn.getOutputStream());
-                            // os.writeBytes(URLEncoder.encode(jsonParam.toString(), "UTF-8"));
-                            os.writeBytes(jsonParam.toString());
-                            os.flush();
-                            os.close();
-                            Log.i("STATUS", String.valueOf(conn.getResponseCode()));
-                            Log.i("MSG", conn.getResponseMessage());
-                            DsLogs.writeLog("ResponseCode " + String.valueOf(conn.getResponseCode()));
-                            DsLogs.writeLog("ResponseMessage " + conn.getResponseMessage());
-                    
-                            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                            String decodedString;
-                            StringBuilder stringBuilder = new StringBuilder();
-                            while ((decodedString = in.readLine()) != null) {
-                                stringBuilder.append(decodedString);
-                            }
-                            in.close();
-                            String response = stringBuilder.toString();
-                            Log.d("response", response);
-                            DsLogs.writeLog("response: " + response);
-                            response = response.replace("\\", "");
-                            //    response = response.replace("\\\"","'");
-                            response = response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1);
-                            Log.d("response", response);
-                            JSONObject obj = new JSONObject(response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1));
-                            Log.d("", obj.toString());
-                            linksArrList = new ArrayList<String>();
-                            barCodesArrList = new ArrayList<String>();
-                            globalV.recieptsHttpUrl = obj.getJSONArray("Q").getJSONObject(0).getString("PrintServerURL");
-                            if (obj.getJSONArray("Q").getJSONObject(0).has("Copies")) {
+                                in.close();
+                                String response = stringBuilder.toString();
+                                Log.d("response", response);
+                                DsLogs.writeLog("response: " + response);
+                                response = response.replace("\\", "");
+                                //    response = response.replace("\\\"","'");
+                                response = response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1);
+                                Log.d("response", response);
+                                JSONObject obj = new JSONObject(response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1));
+                                Log.d("", obj.toString());
+                                linksArrList = new ArrayList<String>();
+                                barCodesArrList = new ArrayList<String>();
+                                globalV.recieptsHttpUrl = obj.getJSONArray("Q").getJSONObject(0).getString("PrintServerURL");
+                                if (obj.getJSONArray("Q").getJSONObject(0).has("Copies")) {
+                
+                                    gotFiles = true;
+                                    String str;
+                                    Log.d("Q.length()", "" + obj.getJSONArray("Q").length());
+                                    for (int i = 0; i < obj.getJSONArray("Q").length(); i++) {
+                                        System.out.println("in loop");
+                                        for (int count = 0; count < obj.getJSONArray("Q").getJSONObject(i).getInt("Copies"); count++) {
                         
-                                gotFiles = true;
-                                String str;
-                                Log.d("Q.length()", "" + obj.getJSONArray("Q").length());
-                                for (int i = 0; i < obj.getJSONArray("Q").length(); i++) {
-                                    System.out.println("in loop");
-                                    for (int count = 0; count < obj.getJSONArray("Q").getJSONObject(i).getInt("Copies"); count++) {
-                                
-                                        if (obj.getJSONArray("Q").getJSONObject(i).getInt("Childern") < 2) {
-                                            str = String.valueOf(obj.getJSONArray("Q").getJSONObject(i).getInt("QueueID"));
-                                            str += obj.getJSONArray("Q").getJSONObject(i).getString("FileExt");
-                                            linksArrList.add(str);
-                                            barCodesArrList.add(obj.getJSONArray("Q").getJSONObject(i).getString("BarCode"));
-                                            DsLogs.writeLog(str);
-                                            System.out.println(str);
-                                        } else {
-                                            for (int children = 1; children < obj.getJSONArray("Q").getJSONObject(i).getInt("Childern") + 1; children++) {
+                                            if (obj.getJSONArray("Q").getJSONObject(i).getInt("Childern") < 2) {
                                                 str = String.valueOf(obj.getJSONArray("Q").getJSONObject(i).getInt("QueueID"));
-                                        
-                                                String FileExt = obj.getJSONArray("Q").getJSONObject(i).getString("FileExt");
-                                                int number = Integer.valueOf(FileExt.substring(1, FileExt.lastIndexOf('.')));
-                                                number += (children - 1);
-                                                String strNum = String.format("%04d", number);
-                                                str += "-" + strNum + FileExt.substring(FileExt.lastIndexOf('.'), FileExt.length());
-                                        
+                                                str += obj.getJSONArray("Q").getJSONObject(i).getString("FileExt");
                                                 linksArrList.add(str);
                                                 barCodesArrList.add(obj.getJSONArray("Q").getJSONObject(i).getString("BarCode"));
+                                                DsLogs.writeLog(str);
                                                 System.out.println(str);
-                                            }
-                                        }
+                                            } else {
+                                                for (int children = 1; children < obj.getJSONArray("Q").getJSONObject(i).getInt("Childern") + 1; children++) {
+                                                    str = String.valueOf(obj.getJSONArray("Q").getJSONObject(i).getInt("QueueID"));
                                 
+                                                    String FileExt = obj.getJSONArray("Q").getJSONObject(i).getString("FileExt");
+                                                    int number = Integer.valueOf(FileExt.substring(1, FileExt.lastIndexOf('.')));
+                                                    number += (children - 1);
+                                                    String strNum = String.format("%04d", number);
+                                                    str += "-" + strNum + FileExt.substring(FileExt.lastIndexOf('.'), FileExt.length());
+                                
+                                                    linksArrList.add(str);
+                                                    barCodesArrList.add(obj.getJSONArray("Q").getJSONObject(i).getString("BarCode"));
+                                                    System.out.println(str);
+                                                }
+                                            }
+                        
+                                        }
+                                    }
+                                    array = linksArrList.toArray(new String[0]);
+                                    barCodeArray = barCodesArrList.toArray(new String[0]);
+                                    System.out.println(Arrays.toString(array));
+                                } else {
+                                    gotFiles = false;
+                
+                                    System.out.println("No value for copies.");
+                                    DsLogs.writeLog("process payment: No value for copies.");
+                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                        public void run() {
+                                            pd.settext(getString(R.string.Thank_You));
+                                            pd.enableB();
+                                            refresh();
+                                        }
+                                    });
+                                }
+            
+                                if (fRef == MODE_CASH || fRef == MODE_CHECK || fRef == MODE_PREPAY) {
+                                    if (String.valueOf(conn.getResponseCode()).equals("200")) {
+                                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                            public void run() {
+                                                if (!globalV.enablePrinting) {
+                                                    pd.settext(getString(R.string.Thank_You));
+                                                    pd.enableB();
+                                                }
+                            
+                                                refresh();
+                                            }
+                                        });
+                                    } else {
+                                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                            public void run() {
+                                                pd.setTitletext(getString(R.string.Payment_Error));
+                                                pd.settext(getString(R.string.Unknown_Error));
+                                                pd.enableB();
+                                                linksArrList.clear();
+                                                barCodesArrList.clear();
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    if (response.contains("Declined")) {
+                                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                            public void run() {
+                                                pd.setTitletext(getString(R.string.Declined));
+                                                pd.settext(getString(R.string.Please_enter_new_Payment_Or_clear));
+                                                pd.enableB();
+                                                linksArrList.clear();
+                                                barCodesArrList.clear();
+                                            }
+                                        });
+                    
+                                    } else if (response.contains("Success") || response.contains("Approved")) {
+                                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                            public void run() {
+                                                pd.setTitletext(getString(R.string.Approved));
+                                                if (!globalV.enablePrinting)
+                                                    pd.settext(getString(R.string.Thank_You));
+                                                pd.enableB();
+                                            }
+                                        });
+                                    } else {
+                                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                            public void run() {
+                                                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                                    public void run() {
+                                                        pd.setTitletext(getString(R.string.Payment_Error));
+                                                        pd.settext(getString(R.string.Please_enter_new_Payment_Or_clear));
+                                                        pd.enableB();
+                                                        linksArrList.clear();
+                                                        barCodesArrList.clear();
+                                                    }
+                                                });
+                                                refreshPayment();
+                                            }
+                        
+                                        });
                                     }
                                 }
-                                array = linksArrList.toArray(new String[0]);
-                                barCodeArray = barCodesArrList.toArray(new String[0]);
-                                System.out.println(Arrays.toString(array));
-                            } else {
-                                gotFiles = false;
-                        
-                                System.out.println("No value for copies.");
-                                DsLogs.writeLog("process payment: No value for copies.");
+            
+            
+                                conn.disconnect();
+                            } catch (Exception e) {
+                                DsLogs.writeLog("catch: " + e.toString());
+                                e.printStackTrace();
+            
                                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                                     public void run() {
-                                        pd.settext(getString(R.string.Thank_You));
+                                        pd.settext("Unknown Error");
                                         pd.enableB();
-                                        refresh();
                                     }
                                 });
                             }
+                            System.out.println("got File Names " + (System.currentTimeMillis() - globalV.logTime));
+                            globalV.logTime = System.currentTimeMillis();
+                            if (globalV.enablePrinting) {
+                                if (gotFiles) {
+                                    try {
+                                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                            public void run() {
+                                                refresh();
+                                            }
+                                        });
                     
-                            if (fRef == MODE_CASH || fRef == MODE_CHECK || fRef == MODE_PREPAY) {
-                                if (String.valueOf(conn.getResponseCode()).equals("200")) {
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        public void run() {
-                                            if (!globalV.enablePrinting) {
-                                                pd.settext(getString(R.string.Thank_You));
+                                        if (globalV.doNotSharePrinter) {
+                                            c2pPrinter.connectPrinter(globalV.printerMAC, 15, printerImg, pd, MainActivity.this);
+                                        } else {
+                                            if (c2pPrinter.PrinterAvailibility(CHECK_STATUS)) {
+                                                c2pPrinter.connectPrinter(globalV.printerMAC, 15, printerImg, pd, MainActivity.this);
+                                            }
+                                        }
+                    
+                                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                            public void run() {
+                                                pd.settext(getString(R.string.Finalizing));
                                                 pd.enableB();
                                             }
-                                    
-                                            refresh();
-                                        }
-                                    });
-                                } else {
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        public void run() {
-                                            pd.setTitletext(getString(R.string.Payment_Error));
-                                            pd.settext(getString(R.string.Unknown_Error));
-                                            pd.enableB();
-                                            linksArrList.clear();
-                                            barCodesArrList.clear();
-                                        }
-                                    });
-                                }
-                            } else {
-                                if (response.contains("Declined")) {
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        public void run() {
-                                            pd.setTitletext(getString(R.string.Declined));
-                                            pd.settext(getString(R.string.Please_enter_new_Payment_Or_clear));
-                                            pd.enableB();
-                                            linksArrList.clear();
-                                            barCodesArrList.clear();
-                                        }
-                                    });
-                            
-                                } else if (response.contains("Success") || response.contains("Approved")) {
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        public void run() {
-                                            pd.setTitletext(getString(R.string.Approved));
-                                            if (!globalV.enablePrinting) pd.settext(getString(R.string.Thank_You));
-                                            pd.enableB();
-                                        }
-                                    });
-                                } else {
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        public void run() {
-                                            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                                public void run() {
-                                                    pd.setTitletext(getString(R.string.Payment_Error));
-                                                    pd.settext(getString(R.string.Please_enter_new_Payment_Or_clear));
-                                                    pd.enableB();
-                                                    linksArrList.clear();
-                                                    barCodesArrList.clear();
-                                                }
-                                            });
-                                            refreshPayment();
-                                        }
-                                
-                                    });
+                                        });
+                                        c2pPrinter.printExpress(array, barCodeArray, printerImg, pd, MainActivity.this, reasonId);
+                                        if (!globalV.doNotSharePrinter)
+                                            c2pPrinter.disconnectPrinter(printerImg);
+                    
+                                        Runtime.getRuntime().gc();
+                    
+                                    } catch (Exception e) {
+                                        DsLogs.writeLog("catch: " + e.toString());
+                                        e.printStackTrace();
+                                    }
+                                    linksArrList.clear();
+                                    barCodesArrList.clear();
                                 }
                             }
-                    
-                    
-                            conn.disconnect();
-                        } catch (Exception e) {
-                            DsLogs.writeLog("catch: " + e.toString());
-                            e.printStackTrace();
-                    
+                            globalV.transactionCompleted = true;
+                            try {
+                                if (globalV.testAutomation) pd.dismiss();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+        
+                        }else{
                             new Handler(Looper.getMainLooper()).post(new Runnable() {
                                 public void run() {
-                                    pd.settext("Unknown Error");
-                                    pd.enableB();
+                                    Toast.makeText(MainActivity.this, getString(R.string.No_Network), Toast.LENGTH_SHORT).show();
                                 }
                             });
                         }
-                        System.out.println("got File Names " + (System.currentTimeMillis() - globalV.logTime));
-                        globalV.logTime = System.currentTimeMillis();
-                        if (globalV.enablePrinting) {
-                            if (gotFiles) {
-                                try {
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        public void run() {
-                                            refresh();
-                                        }
-                                    });
-                                    
-                                    if(globalV.doNotSharePrinter){
-                                        c2pPrinter.connectPrinter(globalV.printerMAC, 15, printerImg,pd,MainActivity.this);
-                                    }else{
-                                        if(c2pPrinter.PrinterAvailibility(CHECK_STATUS)){
-                                            c2pPrinter.connectPrinter(globalV.printerMAC, 15, printerImg,pd,MainActivity.this);
-                                        }
-                                    }
-                                    
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        public void run() {
-                                            pd.settext(getString(R.string.Finalizing));
-                                            pd.enableB();
-                                        }
-                                    });
-                                    c2pPrinter.printExpress(array, barCodeArray,printerImg, pd, MainActivity.this,reasonId);
-                                    if (!globalV.doNotSharePrinter) c2pPrinter.disconnectPrinter(printerImg);
-                            
-                                    Runtime.getRuntime().gc();
-                            
-                                } catch (Exception e) {
-                                    DsLogs.writeLog("catch: " + e.toString());
-                                    e.printStackTrace();
-                                }
-                                linksArrList.clear();
-                                barCodesArrList.clear();
-                            }
-                        }
-                        globalV.transactionCompleted = true;
-                        try{
-                            if(globalV.testAutomation)pd.dismiss();
-                        }catch (Exception e){
-                            e.printStackTrace();
-                        }
-                        
+    
                     }
-                });
-                thread.start();
+                    
+                }).start();
             }
-        }else{
-            Toast.makeText(MainActivity.this, getString(R.string.No_Network), Toast.LENGTH_SHORT).show();
-        }
     }
     
     boolean isNetworkAvailable() {
@@ -1868,47 +1902,6 @@ public class MainActivity extends Activity {
         });
     }
     
-    boolean TrdCheckServerReachebility(){
-        final boolean[] serverIsReacheble = {false};
-        Thread trd = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    URL url = new URL("http://connectivitycheck.gstatic.com/generate_204");
-                    System.out.println(url);
-                    URLConnection conn = url.openConnection();
-                    HttpURLConnection httpConn = (HttpURLConnection) conn;
-                    httpConn.setRequestProperty("Connection","Close");
-                    httpConn.setAllowUserInteraction(false);
-                    httpConn.setInstanceFollowRedirects(true);
-                    httpConn.setRequestMethod("GET");
-                    httpConn.setConnectTimeout(8000);
-                    httpConn.setReadTimeout(8000);
-                    httpConn.connect();
-                    try {
-                        int response = httpConn.getResponseCode();
-                        System.out.println(response);
-                        if (response == 204) {
-                            serverIsReacheble[0] = true;
-                        }
-                    } catch (Exception e) {
-                        System.out.println("204 FAILED");
-                    }
-                } catch (Exception e) {
-                    System.out.println("204 FAILED");
-                }
-            }
-        });
-        trd.start();
-        try {
-            trd.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        
-        return serverIsReacheble[0];
-    }
-    
     boolean isWifiConnected(){
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
@@ -1983,14 +1976,27 @@ public class MainActivity extends Activity {
                                     try {
                                         globalV.transactionCompleted = false;
                                         phone = "718" + String.valueOf(new Random().nextInt(9999999));
-                                        getAcounts(phone);
-                                        amount = String.valueOf(new Random().nextInt(100) + 1000);
-                                        sendPost(MODE_CASH);
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }
                                 }
                             });
+    
+                            try {
+                                getAcounts(phone);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+    
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    amount = String.valueOf(new Random().nextInt(100) + 1000);
+                                    sendPost(MODE_CASH);
+                                }
+                            });
+                            
+                            
                         }
     
                     } catch (InterruptedException e) {
@@ -2007,10 +2013,6 @@ public class MainActivity extends Activity {
     }
     
     private void getAcounts(final String phoneNum) throws Exception {
-        final boolean[] finished = {false};
-        Thread trd = new Thread( new Runnable() {
-            @Override
-            public void run() {
                 try {
                     URL url = new URL(globalV.URLStart + "/api/values/GetAccount/" + phoneNum + "/" + macAd);
                     HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
@@ -2094,15 +2096,6 @@ public class MainActivity extends Activity {
                     DsLogs.writeLog("catch: " + e.toString());
                     
                 }
-                finished[0] = true;
-                
-            }
-        });
-        trd.start();
-        trd.join();
-        while(!finished[0]){
-            System.out.println("Waiting for acount...");
-        }
         
     }
     

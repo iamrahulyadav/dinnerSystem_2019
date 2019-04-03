@@ -2,6 +2,8 @@ package com.c2p.dinner.System;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -16,7 +18,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URL;
@@ -53,12 +54,9 @@ public class register extends Activity {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
 
                 if(keyCode == 160 && event.getAction() == KeyEvent.ACTION_DOWN && eventtext.getText().toString().length() > 0){
-                    String name = register(eventtext.getText().toString());
-                    if(!name.equals("")){
-                        new nonStaticUtilities().saveEventName(name,register.this);
-                        new nonStaticUtilities().saveEventPin(eventtext.getText().toString(),register.this);
-                    }
-                    finish();
+                    globalV.EventPIN = eventtext.getText().toString();
+                    registerDevice(eventtext.getText().toString());
+                    
                 }else if(keyCode == 67 && event.getAction() == KeyEvent.ACTION_DOWN &&  eventtext.getText().toString().length() <1){
                     finish();
                 }
@@ -69,7 +67,7 @@ public class register extends Activity {
 
     }
 
-    public String register(final String eventNumber){
+    public void registerDevice(final String eventNumber){
         Thread trd =new Thread( new Runnable() {
             @Override
             public void run() {
@@ -111,19 +109,22 @@ public class register extends Activity {
 
                     e.printStackTrace();
                 }
+    
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    public void run() {
+                        String name = globalV.registeredTo;
+                        if(!name.equals("")){
+                            new nonStaticUtilities().saveEventName(name,register.this);
+                            new nonStaticUtilities().saveEventPin(globalV.EventPIN,register.this);
+                            finish();
+                        }
+                        
+                    }
+                });
             
             }
         });
         trd.start();
-        try {
-            trd.join();
-        } catch (InterruptedException e) {
-            DsLogs.writeLog("catch: " + e.toString());
-
-            e.printStackTrace();
-        }
-        //todo return empty string if unsuccesfull, and please show toast
-        return globalV.registeredTo;
     }
 
 
