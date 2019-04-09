@@ -1,5 +1,7 @@
 package com.c2p.dinner.System;
 import org.json.JSONArray;
+
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -47,6 +49,7 @@ public class globalV {
     static int printMode = PRINT_MODE_LOCAL;
     static boolean printConnected = false;
     static boolean enablePrinting = true;
+    static boolean isPrinterTested = false;
     
     static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm",Locale.ENGLISH);
     static String PRINTER_NUM;
@@ -56,7 +59,11 @@ public class globalV {
     static boolean testAutomation = false;
     static boolean transactionCompleted = true;
 
+    static BigDecimal conversion = new BigDecimal(1.5);
     
+    static String currencyCode = "USD";
+    static String currencySymbol = "$";
+    static Double exchangeRate = 1.0;
 
 
 }

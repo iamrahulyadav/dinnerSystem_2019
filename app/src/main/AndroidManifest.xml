@@ -61,6 +61,14 @@
             android:theme="@android:style/Theme.Dialog" />
         <activity android:name=".wifiActivity"
             android:theme="@style/FullscreenActionBarStyle" />
+        <activity android:name=".CurrencyConverter"
+            android:theme="@android:style/Theme.Material.Light.Dialog.NoActionBar" />
+
+        <activity android:name=".ChooseCurrency"
+            android:theme="@android:style/Theme.Dialog" />
+
+        <activity android:name=".Settings"
+            android:theme="@android:style/Theme.Dialog" />
 
         <meta-data
             android:name="preloaded_fonts"

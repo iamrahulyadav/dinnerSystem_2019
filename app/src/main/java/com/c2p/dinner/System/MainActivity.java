@@ -66,6 +66,7 @@ import java.util.Random;
 import javax.net.ssl.HttpsURLConnection;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
+import cn.pedant.SweetAlert.SweetAlertDialog;
 
 import static java.lang.Thread.*;
 
@@ -124,7 +125,6 @@ public class MainActivity extends Activity {
     boolean MODE_CCMULTIPAYMENT = false;
     boolean running = true;
     boolean gotFiles = false;
-    boolean isPrinterTested = false;
     boolean printerConnected = false;
     
     private final int SET_ACTIVE = 1;
@@ -139,7 +139,7 @@ public class MainActivity extends Activity {
     boolean charidyAnonymous = false;
     String text;
     int reason = -1;
-    NumberFormat formatter = NumberFormat.getCurrencyInstance();
+    NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.CANADA);
     final SimpleDateFormat sdf = new SimpleDateFormat("EE MMM dd yyyy  h:mm aaa",  Locale.US);
     private boolean runThreads = false;
 
@@ -148,6 +148,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
     
+        new nonStaticUtilities().getCurrency(MainActivity.this);
     
         Resources res = getResources();
         DisplayMetrics dm = res.getDisplayMetrics();
@@ -170,6 +171,7 @@ public class MainActivity extends Activity {
             getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         
         setContentView(R.layout.activity_full);
+        
         defaultET = findViewById(R.id.full_default);
         phoneText = findViewById(R.id.full_phone);
         amountText = findViewById(R.id.full_amount);
@@ -209,7 +211,7 @@ public class MainActivity extends Activity {
         Etexts.add(cvvText);
         Etexts.add(checkText);
         phoneText.addTextChangedListener(new PhoneNumberFormattingTextWatcher("US"));
-        amountText.addTextChangedListener(new MoneyTextWatcher(amountText));
+        amountText.addTextChangedListener(new MoneyTextWatcherWithCode(amountText));
         expText.addTextChangedListener(new ExpiryDateTextWatcher());
         //phoneET.requestFocus();
     
@@ -328,6 +330,11 @@ public class MainActivity extends Activity {
                         if(text.length() == 11 && text.startsWith("1")){
                             text = text.substring(1);
                         }
+    
+                        if(mode == MODE_PREPAY){
+                            resetPaymentMode();
+                        }
+                        
                         phoneText.setTextDirection(View.TEXT_DIRECTION_LTR);
                       //  phoneText.setText("");
                         phoneText.setText(text);
@@ -375,19 +382,7 @@ public class MainActivity extends Activity {
     
                             if(mode == MODE_PREPAY){
                                 if(Double.valueOf(text) > Double.valueOf(prepaidAmount)){
-                                    mode = MODE_NON;
-                                    feedback.setText("");
-                                    processIcon.setVisibility(View.INVISIBLE);
-                                    bll.removeAllViews();
-                                    ccll.removeAllViews();
-                                    if (!globalV.kioskMode) {
-                                        bll.addView(bcash);
-                                    }
-                                    bll.addView(bcc);
-                                    if (!globalV.kioskMode) {
-                                        bll.addView(bcheck);
-                                    }
-                                    ccll.addView(cardText);
+                                    resetPaymentMode();
                                 }
         
                             }
@@ -615,7 +610,23 @@ public class MainActivity extends Activity {
         refresh();
 
     }
-
+    
+    private void resetPaymentMode() {
+        mode = MODE_NON;
+        feedback.setText("");
+        processIcon.setVisibility(View.INVISIBLE);
+        bll.removeAllViews();
+        ccll.removeAllViews();
+        if (!globalV.kioskMode) {
+            bll.addView(bcash);
+        }
+        bll.addView(bcc);
+        if (!globalV.kioskMode) {
+            bll.addView(bcheck);
+        }
+        ccll.addView(cardText);
+    }
+    
     void setPrepay(String ppammount){
         mode = MODE_PREPAY;
         prepaidAmount = ppammount;
@@ -934,7 +945,7 @@ public class MainActivity extends Activity {
                                 response = response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1);
                                 Log.d("response", response);
                                 JSONObject obj = new JSONObject(response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1));
-                                Log.d("", obj.toString());
+                                Log.d("obj.toString()", obj.toString());
                                 linksArrList = new ArrayList<String>();
                                 barCodesArrList = new ArrayList<String>();
                                 globalV.recieptsHttpUrl = obj.getJSONArray("Q").getJSONObject(0).getString("PrintServerURL");
@@ -980,23 +991,30 @@ public class MainActivity extends Activity {
                 
                                     System.out.println("No value for copies.");
                                     DsLogs.writeLog("process payment: No value for copies.");
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        public void run() {
-                                            pd.settext(getString(R.string.Thank_You));
-                                            pd.enableB();
-                                            refresh();
-                                        }
-                                    });
+//                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+//                                        public void run() {
+//                                            pd.settext(getString(R.string.Thank_You));
+//                                            pd.enableB();
+//                                        //    refresh();
+//                                        }
+//                                    });
                                 }
             
                                 if (fRef == MODE_CASH || fRef == MODE_CHECK || fRef == MODE_PREPAY) {
                                     if (String.valueOf(conn.getResponseCode()).equals("200")) {
+                                        
+                                        String msg = getString(R.string.Thank_You);
+                                        if(obj.has("Message") && obj.getString("Message").length() > 1){
+                                            msg = obj.getString("Message");
+                                        }
+    
+                                        final String finalMsg = msg;
                                         new Handler(Looper.getMainLooper()).post(new Runnable() {
                                             public void run() {
-                                                if (!globalV.enablePrinting) {
-                                                    pd.settext(getString(R.string.Thank_You));
+                                      //          if (!globalV.enablePrinting) {
+                                                    pd.settext(finalMsg);
                                                     pd.enableB();
-                                                }
+                                       //         }
                             
                                                 refresh();
                                             }
@@ -1036,15 +1054,13 @@ public class MainActivity extends Activity {
                                     } else {
                                         new Handler(Looper.getMainLooper()).post(new Runnable() {
                                             public void run() {
-                                                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                                    public void run() {
-                                                        pd.setTitletext(getString(R.string.Payment_Error));
-                                                        pd.settext(getString(R.string.Please_enter_new_Payment_Or_clear));
-                                                        pd.enableB();
-                                                        linksArrList.clear();
-                                                        barCodesArrList.clear();
-                                                    }
-                                                });
+    
+                                                pd.setTitletext(getString(R.string.Payment_Error));
+                                                pd.settext(getString(R.string.Please_enter_new_Payment_Or_clear));
+                                                pd.enableB();
+                                                linksArrList.clear();
+                                                barCodesArrList.clear();
+                                                
                                                 refreshPayment();
                                             }
                         
@@ -1092,7 +1108,7 @@ public class MainActivity extends Activity {
                                         });
                                         c2pPrinter.printExpress(array, barCodeArray, printerImg, pd, MainActivity.this, reasonId);
                                         if (!globalV.doNotSharePrinter)
-                                            c2pPrinter.disconnectPrinter(printerImg);
+                                            c2pPrinter.disconnectPrinter(printerImg,true);
                     
                                         Runtime.getRuntime().gc();
                     
@@ -1259,7 +1275,7 @@ public class MainActivity extends Activity {
         
         final processDialog pd = new processDialog(this);
         pd.show();
-        isPrinterTested = true;
+        globalV.isPrinterTested = true;
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -1272,6 +1288,9 @@ public class MainActivity extends Activity {
                     });
     
                     if(!globalV.doNotSharePrinter){
+    
+                        c2pPrinter.PrinterAvailibility(SET_NOT_ACTIVE);
+                        
                         startTime = System.currentTimeMillis();
                         while(!c2pPrinter.PrinterAvailibility(CHECK_STATUS)){
                             try {
@@ -1415,6 +1434,7 @@ public class MainActivity extends Activity {
                     try{
                         reasontext.setText(reasonObj.name);
                         reason = reasonObj.id;
+                        getHonoreeTotals(reasonObj.id);
                     }catch (Exception e){DsLogs.writeLog("catch: " + e.toString());
                         e.printStackTrace();
                     }
@@ -1434,7 +1454,7 @@ public class MainActivity extends Activity {
 
                 }
 
-                if(data.getIntExtra("RES",0)==5){//charidyAnonymous
+                if(data.getIntExtra("RES",0)==5){       //charidyAnonymous
                     charidyAnonymous =(!charidyAnonymous);
                     if(charidyAnonymous){
                         buttonAnonymous.setBackgroundColor(Color.GREEN);
@@ -1525,6 +1545,7 @@ public class MainActivity extends Activity {
                     try{
                         reasontext.setText(reasonObj.name);
                         reason = reasonObj.id;
+                        getHonoreeTotals(reasonObj.id);
                     }catch (Exception e){DsLogs.writeLog("catch: " + e.toString());
                         e.printStackTrace();
                     }
@@ -1601,13 +1622,71 @@ public class MainActivity extends Activity {
 
     }
     
+    private void getHonoreeTotals(final int Id) {
+            new Thread( new Runnable() {
+                @Override
+                public void run() {
+                    URL url = null;
+                    HttpsURLConnection urlConnection;
+                    BufferedReader reader = null;
+                    try {
+                        url = new URL("https://api.dinner.systems/api/values/DeviceLogin/" + macAd +"/ReasonTotal"+ Id +"/1");
+                        urlConnection = (HttpsURLConnection) url.openConnection();
+                        urlConnection.setRequestProperty("Connection","Close");
+                        Log.d("Opened connection to",url.toString());
+                        InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                        reader = new BufferedReader(new InputStreamReader(in));
+                        
+                        DsLogs.writeLog("Opened connection to "+url.toString());
+                        DsLogs.writeLog("ResponseCode "+String.valueOf(urlConnection.getResponseCode()));
+                        DsLogs.writeLog("ResponseMessage "+urlConnection.getResponseMessage());
+                        StringBuilder total = new StringBuilder();
+                        String line;
+    
+                        while ((line = reader.readLine()) != null) {
+                            total.append(line);
+                        }
+    
+                        DsLogs.writeLog("Response: " +total.toString());
+                    
+                        in.close();
+                        urlConnection.disconnect();
+    
+                        JSONObject jsonObject = new JSONArray(total.toString()).getJSONObject(0);
+    
+                        final double honoreeGoal = jsonObject.getDouble("HonoreeGoal");
+                        final double honoreeTotal = jsonObject.getDouble("HonoreeTotal");
+    
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            public void run() {
+                                NumberFormat formatter = NumberFormat.getCurrencyInstance();
+                                formatter.setMaximumFractionDigits(2);
+                                
+                                String text = reasontext.getText().toString();
+                                text += "\n" + "Goal: " + formatter.format(honoreeGoal) + "     Raised:" + formatter.format(honoreeTotal);
+                                
+                                reasontext.setText(text);
+                            }
+                        });
+    
+    
+                    } catch (Exception e) {DsLogs.writeLog("catch: " + e.toString());
+                        e.printStackTrace();
+                    }
+                
+                }
+            }).start();
+        
+        
+    }
+    
     @Override
     public void onResume(){
         super.onResume();
         
         startStatusBarUpdater();
         
-        if(!isPrinterTested){
+        if(!globalV.isPrinterTested && globalV.enablePrinting){
             testPrinter();
         }
         
@@ -1689,20 +1768,44 @@ public class MainActivity extends Activity {
     void logOut(){
         globalV.testAutomation = false;
         globalV.postLogin = false;
+    
+        final SweetAlertDialog pDialog = new SweetAlertDialog(MainActivity.this, SweetAlertDialog.PROGRESS_TYPE);
+        pDialog.getProgressHelper().setBarColor(Color.parseColor("#A5DC86"));
+        pDialog.setContentTextSize(22);
+        pDialog.setContentText("Logging out");
+        pDialog.setCancelable(false);
+        pDialog.show();
+        
         new Thread( new Runnable() {
             @Override
             public void run() {
-                
-                if(globalV.doNotSharePrinter){
-                    System.out.println("logOut:  printerMode is single mode");
-                    System.out.println("logOut:  c2pPrinter.disconnectPrinter() " + c2pPrinter.disconnectPrinter(printerImg));
-                }
+            
+//                if(globalV.doNotSharePrinter){
+//                    System.out.println("logOut:  printerMode is single mode");
+//                    System.out.println("logOut:  c2pPrinter.disconnectPrinter() " + c2pPrinter.disconnectPrinter(printerImg));
+//                }
                 
                 URL url = null;
                 HttpsURLConnection urlConnection;
                 BufferedReader reader = null;
                 System.out.println("########################################################################logout");
                 try {
+    
+    
+                    try {
+                        if (globalV.doNotSharePrinter) {
+                            c2pPrinter.connectPrinter(globalV.printerMAC, 15, printerImg, null, MainActivity.this);
+                        } else {
+                            if (c2pPrinter.PrinterAvailibility(CHECK_STATUS)) {
+                                c2pPrinter.connectPrinter(globalV.printerMAC, 15, printerImg, null, MainActivity.this);
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    
+                    
+                    
                     url = new URL(globalV.URLStart+"/api/values/DeviceLogin/"+macAd+"/LOGOUT/0");
                     urlConnection = (HttpsURLConnection) url.openConnection();
                     urlConnection.setRequestProperty("Connection","Close");
@@ -1718,23 +1821,33 @@ public class MainActivity extends Activity {
                         total.append(line);
                     }
                     System.out.println("total: " +total);
-                    
-                    try{
-                        System.out.println("in try...");
-                        in.close();
-                        urlConnection.disconnect();
-                        System.out.println("after try...");
-                    }catch (IOException e) {DsLogs.writeLog("catch: " + e.toString());
-                        System.out.println("error closing.......");
+                    in.close();
+                    urlConnection.disconnect();
+    
+    
+                    try {
+                        c2pPrinter.printCashiersTotals(new JSONArray(total.toString()));
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    
-                    globalV.logged_in = true;
+    
+    
+                    //   globalV.logged_in = true;   //  todo ??
                     
                     System.out.println("finished putting..");
                     
                 } catch (IOException e) {DsLogs.writeLog("catch: " + e.toString());
                     e.printStackTrace();
                 }
+    
+                c2pPrinter.disconnectPrinter(printerImg,false);
+    
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    public void run() {
+                        pDialog.dismiss();
+                    }
+                });
+                
                 Intent int1 = new Intent(MainActivity.this,LoginActivity.class);
                 startActivity(int1);
                 finish();
@@ -1860,7 +1973,7 @@ public class MainActivity extends Activity {
                         c2pPrinter.connectPrinter(globalV.printerMAC, 15, printerImg, null, MainActivity.this);
                         c2pPrinter.printExpress(array, barCodeArray, printerImg,null, MainActivity.this, -1);
     
-                        if(!globalV.doNotSharePrinter)c2pPrinter.disconnectPrinter(printerImg);
+                        if(!globalV.doNotSharePrinter)c2pPrinter.disconnectPrinter(printerImg, true);
     
                         Runtime.getRuntime().gc();
                         linksArrList.clear();

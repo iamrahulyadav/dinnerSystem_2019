@@ -100,6 +100,13 @@ public class menu extends Activity {
             setResult(Activity.RESULT_OK,intent);
             finish();
         }
+        
+        if(keyCode == BUTTON_6){
+            Intent Rintent=new Intent(menu.this,CurrencyConverter.class);
+            startActivityForResult(Rintent,6);
+            finish();
+        }
+        
         if(keyCode == BUTTON_BACK){
             finish();
         }
@@ -118,16 +125,14 @@ public class menu extends Activity {
             if(data.getIntExtra("RES",0)==1){//ok
                 Intent intent=new Intent();
                 intent.putExtra("RES",3);
-                intent.putExtra("REASON",data.getIntExtra("REASON",-1));
+                intent.putExtra("REASON", (ReasonObject) data.getSerializableExtra("REASON"));
                 setResult(Activity.RESULT_OK,intent);
-                Log.d("in menu",""+data.getIntExtra("REASON",-1));
                 finish();
             }else if(data.getIntExtra("RES",0) == 2) {//ok
                 Intent intent = new Intent();
                 intent.putExtra("RES", 33);
                 intent.putExtra("REASON", (ReasonObject) data.getSerializableExtra("REASON"));
                 setResult(Activity.RESULT_OK, intent);
-                Log.d("in menu", "" + data.getIntExtra("REASON", -1));
                 finish();
             }
         }

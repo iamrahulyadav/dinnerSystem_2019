@@ -30,6 +30,11 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -127,7 +132,7 @@ class C2pPrinter {
             try {
                 System.out.println("reasonId is: " + reasonId);
                 if(reasonId > -1){
-                    printTest(getDonations(reasonId),getTotals(reasonId),reasonId);
+                    printTotals(getDonations(reasonId),getTotals(reasonId),reasonId);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -306,7 +311,7 @@ class C2pPrinter {
         
     }
     
-    boolean disconnectPrinter(ImageView printerImg) {
+    boolean disconnectPrinter(ImageView printerImg,Boolean setNotActive) {
         boolean disconnected = false;
         DsLogs.writeLog("Disconnecting Printer ");
         try {
@@ -337,7 +342,7 @@ class C2pPrinter {
             DsLogs.writeLog("catch: " + e.toString());
             System.out.println("disconnect getErrorStatus():" + myPrinter.getStatus().getErrorStatus());
         }
-        if(!globalV.doNotSharePrinter){
+        if(!globalV.doNotSharePrinter && setNotActive){
             PrinterAvailibility(SET_NOT_ACTIVE);
         }
         
@@ -374,7 +379,7 @@ class C2pPrinter {
                 }
                 updatePD(pd, context.getString(R.string.Successful_connected_to) + mac);
         
-                disconnectPrinter(printerImg);
+                disconnectPrinter(printerImg,true);
             } else {
                 updatePD(pd, context.getString(R.string.Failed_to_connect_to) + mac);
             }
@@ -415,7 +420,7 @@ class C2pPrinter {
     }
     
     
-    private void printTest(JSONArray jsonArrayDonations,JSONArray jsonArrayTotals, int reasonId){
+    private void printTotals(JSONArray jsonArrayDonations, JSONArray jsonArrayTotals, int reasonId){
         try {
             CreateMyData(jsonArrayDonations,jsonArrayTotals, reasonId);
             
@@ -442,6 +447,16 @@ class C2pPrinter {
             }
         }
     
+        try{
+            if(reasonName.contains("-")){
+                reasonName = reasonName.substring(0, reasonName.indexOf("-"));
+            }
+            
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        
+    
         System.out.println("CreateMyData reasonId: " + reasonId);
         System.out.println("CreateMyData reasonName: " + reasonName);
     
@@ -458,6 +473,8 @@ class C2pPrinter {
         }catch (Exception e){
             e.printStackTrace();
         }
+        
+        
         
         String reversedName = "";
         for(int i = reasonName.length() - 1; i >= 0; i--)
@@ -490,6 +507,15 @@ class C2pPrinter {
                     pReasonName = obj.name;
                 }
             }
+            try{
+                if(pReasonName.contains("-")){
+                    pReasonName = pReasonName.substring(0, pReasonName.indexOf("-"));
+                }
+                
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            
             String reversedName1 = "";
             for(int i = pReasonName.length() - 1; i >= 0; i--)
             {
@@ -563,9 +589,7 @@ class C2pPrinter {
             in.close();
             urlConnection.disconnect();
             if(total.length() > 2){
-                JSONArray jsonArray = new JSONArray(total.toString());
-                
-                return jsonArray;
+                return new JSONArray(total.toString());
             }
             
         } catch (Exception e) {
@@ -603,6 +627,108 @@ class C2pPrinter {
         }
         return null;
     }
+    
+    void printCashiersTotals(JSONArray jsonArray) throws Exception {
+    
+        NumberFormat formatter = NumberFormat.getCurrencyInstance();
+        formatter.setMaximumFractionDigits(2);
+    
+        try{
+            Bitmap myBitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/download/" + "Logo.jpg");
+            // ((512 - myBitmap.getWidth()) / 2
+            myPrinter.addImage(myBitmap, 0, 0, myBitmap.getWidth(), myBitmap.getHeight(), Printer.PARAM_DEFAULT, Printer.PARAM_DEFAULT, Printer.HALFTONE_DITHER, Printer.PARAM_DEFAULT, Printer.COMPRESS_AUTO);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    
+        byte[] commandsBOLD = new byte[]{0x1B, 0x21, 0x10};
+        byte[] commandsNormal = new byte[]{0x1B, 0x21, 0x03};
+        
+        myPrinter.addCommand(commandsBOLD);
+    
+        myPrinter.addTextAlign(Printer.ALIGN_CENTER);// by default the alignment is left.
+        myPrinter.addFeedLine(1);// Calling this API causes the printer positioned at "the beginning of the line."
+    
+        myPrinter.addText(globalV.fullName + "\n");
+    
+        String beginDateTime = jsonArray.getJSONObject(0).getString("BeginDateTime");
+        String endDateTime = jsonArray.getJSONObject(0).getString("EndDateTime");
+    
+        myPrinter.addCommand(commandsNormal);
+        myPrinter.addTextFont(Printer.PARAM_DEFAULT);
+        
+        String totalBuilder = formatDate(beginDateTime) +
+                "   " +
+                formatDate(endDateTime) + "\n\n";
+        
+        myPrinter.addText(totalBuilder);
+    
+        myPrinter.addFeedLine(1);
+        
+    
+        JSONArray v = jsonArray.getJSONObject(0).getJSONArray("v");
+        
+        for (int i = 0; i < v.length(); i ++){
+            JSONObject jsonObject = v.getJSONObject(i);
+            
+            if(jsonObject.has("PaymentType")){
+                myPrinter.addTextAlign(Printer.ALIGN_LEFT);
+                String str = jsonObject.getString("PaymentType") +
+                        "\t\t\t" +
+                        formatter.format(jsonObject.getDouble("Amount")) +
+                        "\n";
+                myPrinter.addText(str);
+    
+                System.out.println(str);
+            }
+            
+        }
+        
+        try{
+            myPrinter.addText("\n");
+            myPrinter.addFeedLine(1);
+            Bitmap myBitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/download/" + "ReceiptLogo.jpg");
+            myPrinter.addImage(myBitmap, 0, 0, myBitmap.getWidth(), myBitmap.getHeight(), Printer.PARAM_DEFAULT, Printer.PARAM_DEFAULT, Printer.HALFTONE_DITHER, Printer.PARAM_DEFAULT, Printer.COMPRESS_AUTO);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    
+        myPrinter.addCut(Printer.CUT_FEED);
+        myPrinter.beginTransaction();
+        myPrinter.sendData(Printer.PARAM_DEFAULT);
+        myPrinter.endTransaction();
+        myPrinter.clearCommandBuffer();
+        System.out.println("finished printing file");
+    
+    }
+    
+    private String formatDate(String timeStamp){
+    
+        timeStamp = timeStamp.substring(0, 19);
+        System.out.println(timeStamp);
+        
+        String results = "";
+        
+     //   String timeStamp = "2010-10-15T09:27:37";
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss",Locale.US);
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yy/MM/dd hh:mm a", Locale.getDefault());
+        dateFormat.setTimeZone(TimeZone.getDefault());
+        
+        try {
+            Date date = format.parse(timeStamp);
+            System.out.println(date);
+    
+            results  = dateFormat.format(date);
+            System.out.println("Current Date Time : " + results);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        
+        return results;
+    }
+    
+    
     
     
 }

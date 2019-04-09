@@ -30,9 +30,10 @@ public class MoneyTextWatcher implements TextWatcher {
         String s = editable.toString();
         if (s.isEmpty()) return;
         editText.removeTextChangedListener(this);
-        String cleanString = s.replaceAll("[$,.]", "");
+        String cleanString = s.replaceAll("[$₪,.]", "");
         BigDecimal parsed = new BigDecimal(cleanString).setScale(2, BigDecimal.ROUND_FLOOR).divide(new BigDecimal(100), BigDecimal.ROUND_FLOOR);
         String formatted = NumberFormat.getCurrencyInstance().format(parsed);
+        formatted = formatted.replace("$", globalV.currencySymbol);
         editText.setText(formatted);
         editText.setSelection(formatted.length());
         editText.addTextChangedListener(this);

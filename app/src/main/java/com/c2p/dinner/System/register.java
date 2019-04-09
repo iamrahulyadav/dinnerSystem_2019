@@ -116,6 +116,9 @@ public class register extends Activity {
                         if(!name.equals("")){
                             new nonStaticUtilities().saveEventName(name,register.this);
                             new nonStaticUtilities().saveEventPin(globalV.EventPIN,register.this);
+                            globalV.currencyCode = "USD";
+                            globalV.currencySymbol = "$";
+                            new nonStaticUtilities().saveCurrency(register.this);
                             finish();
                         }
                         

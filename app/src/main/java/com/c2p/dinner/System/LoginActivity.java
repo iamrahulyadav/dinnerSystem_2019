@@ -13,7 +13,6 @@ import android.net.NetworkInfo;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -44,18 +43,13 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URL;
 import java.net.URLConnection;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+
+import cn.pedant.SweetAlert.SweetAlertDialog;
 
 public class LoginActivity extends Activity {
     
@@ -85,6 +79,7 @@ public class LoginActivity extends Activity {
     
     LinearLayout background;
     private boolean runThreads;
+    private SweetAlertDialog pDialog;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,7 +105,12 @@ public class LoginActivity extends Activity {
         globalV.deviceMac = getMacAddr();
         
         httpGetImage();
-        
+    
+        pDialog = new SweetAlertDialog (LoginActivity.this, SweetAlertDialog .PROGRESS_TYPE);
+        pDialog.getProgressHelper().setBarColor(Color.parseColor("#A5DC86"));
+        pDialog.setContentTextSize(42);
+        pDialog.setContentText("Loading");
+        pDialog.setCancelable(false);
         
         gettingInfo.setText("");
         ipText.setText("MAC: " + globalV.deviceMac + "               Device:" + new nonStaticUtilities().getDeviceName(this) + "                  IP: " + getMyLocalIpAddress());
@@ -135,6 +135,8 @@ public class LoginActivity extends Activity {
         printerNum.setOnKeyListener(new View.OnKeyListener() {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 if ((keyCode == 160 || keyCode == 66) && event.getAction() == KeyEvent.ACTION_DOWN && printerNum.getText().length() > 1 && cashierNum.getText().length() > 1) {  // if ((keyCode == 160) && event.getAction() == KeyEvent.ACTION_DOWN && printerNum.getText().length() > 1 && cashierNum.getText().length() > 1) {
+                    
+                    pDialog.show();
                     
                     getInfo();
                     globalV.PRINTER_NUM = printerNum.getText().toString();
@@ -173,6 +175,8 @@ public class LoginActivity extends Activity {
     protected void onResume() {
         super.onResume();
         
+        globalV.isPrinterTested = false;
+        
         if (new nonStaticUtilities().getEventName(this).length() < 1) {
             Intent intent = new Intent(LoginActivity.this, register.class);
             startActivity(intent);
@@ -180,13 +184,12 @@ public class LoginActivity extends Activity {
         eventtext.setText(new nonStaticUtilities().getEventName(this));
         
         if (ContextCompat.checkSelfPermission(LoginActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            
-            if (ActivityCompat.shouldShowRequestPermissionRationale(LoginActivity.this,
+    
+            if (!ActivityCompat.shouldShowRequestPermissionRationale(LoginActivity.this,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            } else {
-                ActivityCompat.requestPermissions(LoginActivity.this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
-            }
+                        ActivityCompat.requestPermissions(LoginActivity.this,
+                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
+                    }
         }
         
         waitForNet();
@@ -369,6 +372,7 @@ public class LoginActivity extends Activity {
                                 //Toast.makeText(LoginActivity.this, "Error. Try again. ", Toast.LENGTH_SHORT).show();
                                 gettingInfo.setText("");
                                 background.setBackgroundColor(Color.parseColor("#ffffff"));
+                                pDialog.dismiss();
                                 finish();
                             }
                         });
@@ -386,25 +390,57 @@ public class LoginActivity extends Activity {
                             public void run() {
                                 gettingInfo.setText("");
                                 background.setBackgroundColor(Color.parseColor("#ffffff"));
+                                pDialog.dismiss();
                                 finish();
                             }
                         });
                         
                     }
-                    
-                    getReasons();
+    
+                    sendExchangeRate();
                     
                 } else {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             Toast.makeText(LoginActivity.this, "No Network", Toast.LENGTH_SHORT).show();
+                            pDialog.dismiss();
                         }
                     });
                 }
                 
             }
         }).start();
+    }
+    
+    private void sendExchangeRate() {
+        
+                try {
+                    URL url = new URL("https://api.dinner.systems/api/values/DeviceLogin/" + macAd + "/Currency"+ globalV.currencyCode +"/" + globalV.exchangeRate);
+                    Log.d("url", url.toString());
+                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestProperty("Connection", "Close");
+                    InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder total = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        total.append(line);
+                    }
+                    Log.d("sendExchangeRate", total.toString());
+                    in.close();
+                    urlConnection.disconnect();
+                    
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        public void run() {
+                            pDialog.dismiss();
+                        }
+                    });
+                }
+                
+                getReasons();
     }
     
     public void getReasons() {
@@ -457,7 +493,10 @@ public class LoginActivity extends Activity {
             globalV.reasons.clear();
             for (int i = 0; i < reasonJSON.length(); i++) {
                 JSONObject jsonobject = reasonJSON.getJSONObject(i);
-                globalV.reasonsObjs.add(new ReasonObject(jsonobject.getString("reasonNameJewish"), jsonobject.getInt("reasonId"), jsonobject.getInt("number")));
+                globalV.reasonsObjs.add(new ReasonObject(
+                        jsonobject.getString("reasonNameJewish"),
+                        jsonobject.getInt("reasonId"),
+                        jsonobject.getInt("number")));
             }
             for (int i = 0; i < reasonJSON.length(); i++) {
                 globalV.reasons.add(globalV.reasonsObjs.get(i).name);
@@ -478,6 +517,7 @@ public class LoginActivity extends Activity {
                     //Toast.makeText(LoginActivity.this, "Error. Try again. ", Toast.LENGTH_SHORT).show();
                     gettingInfo.setText("");
                     background.setBackgroundColor(Color.parseColor("#ffffff"));
+                    pDialog.dismiss();
                     //    finish();
                 }
             });
@@ -491,6 +531,7 @@ public class LoginActivity extends Activity {
                     //Toast.makeText(LoginActivity.this, "Error. Try again. ", Toast.LENGTH_SHORT).show();
                     gettingInfo.setText("");
                     background.setBackgroundColor(Color.parseColor("#ffffff"));
+                    pDialog.dismiss();
                     //   finish();
                 }
             });

@@ -31,7 +31,7 @@ public class testingTools extends Activity  {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if(keyCode == BUTTON_1){
             globalV.testAutomation = !globalV.testAutomation;
-            testAutomation.setChecked(globalV.enablePrinting);
+            testAutomation.setChecked(globalV.testAutomation);
         }
         if(keyCode == BUTTON_2){
             Intent routerIntent = new Intent(testingTools.this,SpeedTest.class);
@@ -47,7 +47,7 @@ public class testingTools extends Activity  {
             finish();
         }
 
-        return super.onKeyDown(keyCode, event);
+        return true;
     }
 
 }

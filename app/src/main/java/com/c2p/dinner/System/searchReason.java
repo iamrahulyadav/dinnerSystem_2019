@@ -29,6 +29,17 @@ public class searchReason extends Activity {
     ImageButton backBtn;
     EditText editText;
     final int BUTTON_BACK =67;
+    final int BUTTON_1 = 145;
+    final int BUTTON_2 = 146;
+    final int BUTTON_3 = 147;
+    final int BUTTON_4 = 148;
+    final int BUTTON_5 = 149;
+    final int BUTTON_6 = 150;
+    final int BUTTON_7 = 151;
+    final int BUTTON_8 = 152;
+    final int BUTTON_9 = 153;
+    final int BUTTON_0 = 144;  // todo please double check
+    
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,15 +59,47 @@ public class searchReason extends Activity {
         backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Intent intent=new Intent();
+                intent.putExtra("RES",0);
+                setResult(Activity.RESULT_OK,intent);
                 finish();
             }
         });
     
+        editText.requestFocus();
+        
         editText.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
+                
+                System.out.println("keyCode: " + keyCode);
+                
                 if (keyCode == BUTTON_BACK  && event.getAction() == KeyEvent.ACTION_DOWN) {
+                    Intent intent=new Intent();
+                    intent.putExtra("RES",0);
+                    setResult(Activity.RESULT_OK,intent);
                     finish();
+                }else if (event.getAction() == KeyEvent.ACTION_DOWN) {
+    
+                    char c = 'a';
+    
+                    switch (keyCode) {
+                        case BUTTON_1:      c = '1';  break;
+                        case BUTTON_2:      c = '2';  break;
+                        case BUTTON_3:      c = '3';  break;
+                        case BUTTON_4:      c = '4';  break;
+                        case BUTTON_5:      c = '5';  break;
+                        case BUTTON_6:      c = '6';  break;
+                        case BUTTON_7:      c = '7';  break;
+                        case BUTTON_8:      c = '8';  break;
+                        case BUTTON_9:      c = '9';  break;
+                        case BUTTON_0:      c = '0';  break;
+                    }
+                    
+                    typedStr += c;
+                    textView.setText(typedStr);
+                    updateSearchResults(searchName(typedStr));
+                    
                 }
                 return  true;
             }

@@ -3,12 +3,10 @@ package com.c2p.dinner.System;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
-import android.widget.TextView;
 
 public class LoginMenu extends Activity {
 
@@ -54,8 +52,8 @@ public class LoginMenu extends Activity {
             finish();
         }
         if(keyCode == BUTTON_3){
-            globalV.kioskMode = true;
-            //todo show toast
+            Intent settingsIntens = new Intent(LoginMenu.this, Settings.class);
+            startActivity(settingsIntens);
             finish();
         }
         if(keyCode == BUTTON_4){

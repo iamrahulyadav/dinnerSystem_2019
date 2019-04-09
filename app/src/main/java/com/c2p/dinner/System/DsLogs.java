@@ -1,10 +1,6 @@
 package com.c2p.dinner.System;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -13,14 +9,11 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
@@ -28,12 +21,11 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.UUID;
 
 public class DsLogs {
     
     
-    public static void writeLog(final String str){
+    static void writeLog(final String str){
     
         new Thread( new Runnable() {
             @Override
@@ -79,7 +71,7 @@ public class DsLogs {
         
     }
     
-    public  static void UploadLogs(){
+    static void UploadLogs(){
         new Thread( new Runnable() {
             @Override
             public void run() {
@@ -160,7 +152,7 @@ public class DsLogs {
         
     }
     
-    public static String readGuid(){
+    private static String readGuid(){
         
         String PATH = Environment.getExternalStorageDirectory() + "/download/";
         File logFile = new File(PATH + "log.txt");

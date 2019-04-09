@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -332,6 +331,88 @@ class nonStaticUtilities {
             // Handle Exception
         }
         return "";
+    }
+    
+    void saveCurrency(Context cont){
+        try {
+            
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(cont.openFileOutput("Currency_code", Context.MODE_PRIVATE));
+            outputStreamWriter.write(globalV.currencyCode);
+            outputStreamWriter.close();
+    
+            OutputStreamWriter outputStreamWriter1 = new OutputStreamWriter(cont.openFileOutput("Currency_Symbol", Context.MODE_PRIVATE));
+            outputStreamWriter1.write(globalV.currencySymbol);
+            outputStreamWriter1.close();
+    
+            OutputStreamWriter outputStreamWriter2 = new OutputStreamWriter(cont.openFileOutput("exchangeRate", Context.MODE_PRIVATE));
+            outputStreamWriter2.write(String.valueOf(globalV.exchangeRate));
+            outputStreamWriter2.close();
+            
+        }
+        catch (Exception e) {
+            DsLogs.writeLog("catch: " + e.toString());
+            
+            Log.e("Exception", "File write failed: " + e.toString());
+            
+        }
+        
+    }
+    
+    void getCurrency(Context cont){
+        String ret = "";
+        try {
+            InputStream inputStream = cont.openFileInput("Currency_code");
+            if ( inputStream != null ) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String receiveString = "";
+                StringBuilder stringBuilder = new StringBuilder();
+                while ( (receiveString = bufferedReader.readLine()) != null ) {
+                    stringBuilder.append(receiveString);
+                }
+                inputStream.close();
+                ret = stringBuilder.toString();
+                globalV.currencyCode = ret;
+            }
+    
+            InputStream inputStream2 = cont.openFileInput("Currency_Symbol");
+            if ( inputStream2 != null ) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream2);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String receiveString = "";
+                StringBuilder stringBuilder = new StringBuilder();
+                while ( (receiveString = bufferedReader.readLine()) != null ) {
+                    stringBuilder.append(receiveString);
+                }
+                inputStream2.close();
+                ret = stringBuilder.toString();
+                globalV.currencySymbol = ret;
+            }
+    
+            InputStream inputStream3 = cont.openFileInput("exchangeRate");
+            if ( inputStream3 != null ) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream3);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String receiveString = "";
+                StringBuilder stringBuilder = new StringBuilder();
+                while ( (receiveString = bufferedReader.readLine()) != null ) {
+                    stringBuilder.append(receiveString);
+                }
+                inputStream3.close();
+                ret = stringBuilder.toString();
+                globalV.exchangeRate = Double.valueOf(ret);
+            }
+            
+            
+            
+            
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
     }
     
 }
